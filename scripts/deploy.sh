@@ -17,10 +17,14 @@ tar -czf /tmp/lifeos-deploy.tgz dist package.json package-lock.json \
 echo "[3/5] 上传..."
 scp -q /tmp/lifeos-deploy.tgz "$SERVER:/tmp/"
 
-echo "[4/5] 服务器解包 + 依赖 + 重启..."
-ssh "$SERVER" "cd $REMOTE_DIR && tar -xzf /tmp/lifeos-deploy.tgz && \
+echo "[4/5] 服务器解包 + 依赖 + 重启（dist 原子交换，自动清理历史 hash 文件）..."
+ssh "$SERVER" "cd $REMOTE_DIR && mkdir -p /tmp/lifeos-new && rm -rf /tmp/lifeos-new/* && \
+  tar -xzf /tmp/lifeos-deploy.tgz -C /tmp/lifeos-new && \
+  rm -rf dist.bak && mv dist dist.bak && mv /tmp/lifeos-new/dist . && rm -rf dist.bak && \
+  cp -f /tmp/lifeos-new/package.json /tmp/lifeos-new/package-lock.json . && \
+  cp -rf /tmp/lifeos-new/server/. server/ && rm -rf /tmp/lifeos-new /tmp/lifeos-deploy.tgz && \
   npm install --omit=dev --no-audit --no-fund 2>&1 | tail -1 && \
-  pm2 restart life-os && rm -f /tmp/lifeos-deploy.tgz"
+  pm2 restart life-os"
 
 echo "[5/5] 健康检查..."
 sleep 3

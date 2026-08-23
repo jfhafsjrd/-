@@ -192,7 +192,7 @@ async function start() {
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  background: linear-gradient(160deg, #23203a, #141625);
+  background: var(--bg-2);
   border: 1px solid var(--border);
   transition: transform var(--dur) var(--ease), box-shadow var(--dur), border-color var(--dur);
 }
@@ -254,11 +254,11 @@ async function start() {
 }
 .wall-fade.left {
   left: 0;
-  background: linear-gradient(90deg, rgba(10, 11, 16, 0.9), transparent);
+  background: linear-gradient(90deg, rgba(var(--scrim), 0.9), transparent);
 }
 .wall-fade.right {
   right: 0;
-  background: linear-gradient(-90deg, rgba(10, 11, 16, 0.9), transparent);
+  background: linear-gradient(-90deg, rgba(var(--scrim), 0.9), transparent);
 }
 
 @media (max-width: 640px) {

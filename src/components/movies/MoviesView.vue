@@ -1262,7 +1262,7 @@ kbd {
   aspect-ratio: 2 / 3;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(160deg, #23203a, #141625);
+  background: var(--bg-2);
   border: 1px solid var(--border);
 }
 .mv-cover img {

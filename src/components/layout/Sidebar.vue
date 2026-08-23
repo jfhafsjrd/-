@@ -9,12 +9,17 @@ const navItems = computed(() => modules)
 
 /* ---------- 主题切换 ---------- */
 const theme = ref(localStorage.getItem('lifeos_theme') === 'light' ? 'light' : 'dark')
-function toggleTheme() {
-  theme.value = theme.value === 'light' ? 'dark' : 'light'
-  document.documentElement.dataset.theme = theme.value
-  localStorage.setItem('lifeos_theme', theme.value)
+function applyTheme(next) {
+  theme.value = next
+  document.documentElement.dataset.theme = next
+  localStorage.setItem('lifeos_theme', next)
   window.dispatchEvent(new CustomEvent('lifeos:theme'))
 }
+/* 命令面板等处切换主题时同步本组件状态 */
+window.addEventListener('lifeos:theme', () => {
+  theme.value = document.documentElement.dataset.theme || 'dark'
+})
+const toggleTheme = () => applyTheme(theme.value === 'light' ? 'dark' : 'light')
 
 /* 命令面板由 App.vue 挂载，这里只广播开关事件 */
 const emitPalette = () => window.dispatchEvent(new CustomEvent('lifeos:palette'))

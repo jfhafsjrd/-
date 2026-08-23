@@ -30,6 +30,15 @@ html[data-theme='light'] .hero-sub b {
 html[data-theme='light'] .search-box {
   background: rgba(30, 32, 72, 0.05);
 }
+html[data-theme='light'] .quick-item {
+  background: rgba(30, 32, 72, 0.035);
+}
+html[data-theme='light'] .type-chips {
+  background: rgba(30, 32, 72, 0.04);
+}
+html[data-theme='light'] .sort-select {
+  background: rgba(30, 32, 72, 0.04);
+}
 html[data-theme='light'] .input {
   background: rgba(30, 32, 72, 0.05);
   color: var(--text-1);

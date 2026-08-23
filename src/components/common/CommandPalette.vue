@@ -3,7 +3,7 @@
  * 命令面板（Ctrl+K）— 全局快捷操作中心
  * 跳转模块 · 搜影视库 · 搜书签 · 快捷动作，模糊匹配 + 键盘导航
  */
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api'
 import { modules } from '@/router/modules'
@@ -16,13 +16,13 @@ const query = ref('')
 const activeIdx = ref(0)
 const inputEl = ref(null)
 
-/* 懒加载数据源：首次打开才拉，之后走缓存 */
+/* 数据源随应用启动预取（面板打开即有数据，不用等跨境请求） */
 const moviesCache = ref(null)
 const linksCache = ref(null)
-async function warmup() {
-  if (!moviesCache.value) api.movies.list().then((l) => (moviesCache.value = l)).catch(() => {})
-  if (!linksCache.value) api.links.list().then((l) => (linksCache.value = Array.isArray(l) ? l : l.items || [])).catch(() => {})
-}
+onMounted(() => {
+  api.movies.list().then((l) => (moviesCache.value = l)).catch(() => {})
+  api.links.list().then((l) => (linksCache.value = Array.isArray(l) ? l : [])).catch(() => {})
+})
 
 const open = computed(() => props.modelValue)
 watch(open, async (v) => {
@@ -31,7 +31,6 @@ watch(open, async (v) => {
     activeIdx.value = 0
     await nextTick()
     inputEl.value?.focus()
-    warmup()
   }
 })
 
@@ -64,7 +63,7 @@ const commands = computed(() => {
     })
   }
   for (const l of linksCache.value || []) {
-    list.push({ group: '书签', icon: l.emoji || '🔗', label: l.title || l.name || '', desc: l.url || l.link || '', run: () => window.open(l.url || l.link, '_blank') })
+    list.push({ group: '书签', icon: l.icon || '🔗', label: l.title || l.name || '', desc: l.url || '', run: () => window.open(l.url, '_blank') })
   }
   return list.filter((x) => x.label)
 })

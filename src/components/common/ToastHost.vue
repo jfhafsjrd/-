@@ -36,7 +36,8 @@ const ICONS = { success: '✓', error: '✕', info: 'ℹ' }
   gap: 10px;
   padding: 11px 18px;
   border-radius: 12px;
-  background: rgba(19, 21, 32, 0.92);
+  background: var(--card-solid);
+  color: var(--text-1);
   backdrop-filter: blur(14px);
   border: 1px solid var(--border);
   box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.7);

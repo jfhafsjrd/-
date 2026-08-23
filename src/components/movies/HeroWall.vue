@@ -156,7 +156,7 @@ const posterUrl = (p) => tmdbPoster(p, 'w185')
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(10, 11, 16, 0.92) 0%, rgba(10, 11, 16, 0.35) 28%, rgba(10, 11, 16, 0.35) 72%, rgba(10, 11, 16, 0.92) 100%),
-    linear-gradient(180deg, rgba(10, 11, 16, 0.5), rgba(10, 11, 16, 0.2) 45%, rgba(10, 11, 16, 0.85));
+    linear-gradient(90deg, rgba(var(--scrim), 0.92) 0%, rgba(var(--scrim), 0.35) 28%, rgba(var(--scrim), 0.35) 72%, rgba(var(--scrim), 0.92) 100%),
+    linear-gradient(180deg, rgba(var(--scrim), 0.5), rgba(var(--scrim), 0.2) 45%, rgba(var(--scrim), 0.85));
 }
 </style>

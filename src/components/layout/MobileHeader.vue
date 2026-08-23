@@ -70,7 +70,7 @@ function close() {
     justify-content: space-between;
     height: var(--header-h);
     padding: 0 14px;
-    background: rgba(11, 12, 19, 0.82);
+    background: var(--card);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
@@ -104,7 +104,7 @@ function close() {
   top: 0;
   bottom: 0;
   width: min(300px, 82vw);
-  background: rgba(13, 15, 22, 0.96);
+  background: var(--bg-2);
   border-right: 1px solid var(--border);
   padding: 18px 14px;
   display: flex;

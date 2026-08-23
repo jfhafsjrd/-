@@ -44,6 +44,9 @@
   --sidebar-w: 236px;
   --header-h: 60px;
 
+  /* 海报压边雾色（rgb 分量，供 rgba(var(--scrim), x) 使用） */
+  --scrim: 10, 11, 16;
+
   /* 字体 */
   --font: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
@@ -94,4 +97,6 @@
   --warning-soft: rgba(199, 125, 6, 0.12);
   --danger-soft: rgba(220, 74, 74, 0.1);
   --info-soft: rgba(7, 132, 195, 0.12);
+
+  --scrim: 234, 234, 245;
 }

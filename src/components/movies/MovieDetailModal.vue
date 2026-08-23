@@ -71,7 +71,7 @@ function onImgError() {
   border-radius: 12px;
   overflow: hidden;
   aspect-ratio: 16 / 6.5;
-  background: linear-gradient(160deg, #23203a, #141625);
+  background: var(--bg-2);
   border: 1px solid var(--border);
 }
 .backdrop img {
@@ -93,7 +93,7 @@ function onImgError() {
   aspect-ratio: 2 / 3;
   border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(160deg, #23203a, #141625);
+  background: var(--bg-2);
   border: 1px solid var(--border);
 }
 .poster img {
