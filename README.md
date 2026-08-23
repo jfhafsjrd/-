@@ -9,13 +9,15 @@
 | 模块 | 功能 |
 |---|---|
 | 🏠 首页 | 问候语、天气卡（wttr.in 免密钥）、各模块统计、今日待办、近期日程、快捷入口 |
-| 🎬 影视 | TMDB 全品类中文混搜、无缝滚动趋势海报墙、待看/已看完双池、`TMDB 7.8 \| 个人 8.5` 数字评分、预约看剧自动上日历、**Trakt.tv 一键同步观看记录** |
+| 🎬 影视 | TMDB 全品类中文混搜、无缝滚动趋势海报墙、待看/已看完双池、`TMDB 7.8 \| 个人 8.5` 数字评分、预约看剧自动上日历、**Trakt.tv 官方 API 同步**（设备码授权 · 每日自动同步 · TMDB 中文反查 · 追剧播出日历联动） |
 | 🎮 游戏 | Steam 静默同步（每 2 小时 + 250ms 限流）、🏆 100% 满成就荣誉墙（流光边框 + 3D 倾斜）、成就明细弹窗（中文名）、手动游戏管理 |
-| 📅 日历待办 | 自绘月/周日历、三色事件来源（待办紫 / 影视蓝 / 日程绿）、待办截止自动上日历、分类快速添加 |
+| 📅 日历待办 | 自绘月/周日历、四色事件来源（待办紫 / 影视蓝 / 日程绿 / Trakt 追剧金）、待办截止自动上日历、分类快速添加 |
 | 🐙 GitHub | 仓库追踪、最新 + 历史 Release、多平台安装包直连下载（.ipa/.apk/.exe/.dmg…）、🎲 极客雷达随机推荐（大白话中文简介） |
 | 🔗 导航 | 分类网格书签、别名拼音搜索、哨兵存活检测（失效标红） |
 
-**跨模块联动**：影视预约 → 日历事件；待办截止 → 日历事件；首页聚合一切。
+**跨模块联动**：影视预约 → 日历事件；待办截止 → 日历事件；Trakt 追剧播出表 → 日历事件；首页聚合一切。
+
+**安全**：`.env` 设 `ACCESS_CODE` 即启用全站访问码登录（令牌 HMAC 派生、90 天免输、改码全员下线）。
 
 ## 快速开始
 
@@ -36,6 +38,7 @@ npm start          # 生产模式：单端口 :3000 托管全部
 
 | 变量 | 说明 |
 |---|---|
+| `ACCESS_CODE` | 全站访问码（留空不启用；生产强烈建议设置） |
 | `TMDB_API_KEY` | [themoviedb.org](https://www.themoviedb.org/settings/api) 免费申请 |
 | `STEAM_API_KEY` / `STEAM_ID` | [Steam Web API](https://steamcommunity.com/dev/apikey) + 你的 SteamID64 |
 | `GITHUB_TOKEN` | 可选，[生成](https://github.com/settings/tokens/new?scopes=public_repo)后限额 60→5000 次/小时 |
@@ -43,34 +46,38 @@ npm start          # 生产模式：单端口 :3000 托管全部
 | `WEATHER_CITY` | 天气城市英文名，默认 Shenzhen |
 | `HTTPS_PROXY` | 大陆本机开发填本地代理；海外部署留空 |
 
-### Trakt.tv 同步（可选）
+### Trakt.tv 同步（VIP 官方 API 通道）
 
-Trakt 已把 API 应用创建设为 VIP 专属，本项目的免费方案是 **zip 导出同步**：
+Trakt 把 API 应用创建设为 VIP 专属。有 VIP 后两步开通：
 
-1. 打开 [trakt.tv/users/me/settings/data](https://trakt.tv/users/me/settings/data) → 导出数据（免费账号可用）得到 zip
-2. Life OS 影视页 → 「📥 导入 Trakt 记录」→ 把 zip 拖进上传框
-3. 自动解析出待看/已看/评分/观看日期，通过 TMDB ID 精确反查中文标题与海报后入库
+1. [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications) 创建应用（Name 随意，Redirect URI 填 `http://127.0.0.1`），把 Client ID/Secret 填进 `.env`
+2. 站内影视页 → 「Trakt 同步」→ 设备码授权一次（永久有效，令牌自动续期）
 
-**持续同步**：以后每次想同步，重复"导出 zip → 拖进来"两个动作即可（约 30 秒），已在库中的条目自动跳过、缺海报的自动补全，不会重复。
+开通后：**每日 07:17 自动同步**待看/已看/评分，新增条目自动 TMDB 中文反查标题海报，
+日历页金色「Trakt 追剧」事件显示追的剧哪天更新。
 
-弹窗里还提供「方式二 · 网页抓取」：在 Trakt 的历史/待看页面按 F12 运行内置脚本，复制结果粘贴导入（适合不方便导出的场景）。
-
-若你拥有 VIP 并配置了 `TRAKT_CLIENT_ID/SECRET`（[创建应用](https://trakt.tv/oauth/applications)），页头会出现「Trakt 同步」按钮，走官方 API 一键授权同步 —— 三种方式并存，按需选用。
+**免 VIP 备选**：zip 导出同步 + 网页抓取导入仍保留 —— 打开 [trakt.tv/users/me/settings/data](https://trakt.tv/users/me/settings/data) 导出 zip，影视页「📥 导入 Trakt 记录」拖进去即可，三种方式并存。
 
 ## 部署（阿里云马来西亚 / 任意海外服务器）
+
+首次部署：
 
 ```bash
 # 服务器上（Node ≥ 20）
 git clone <你的仓库> && cd life-os
-npm install --omit=dev
-npm run build
-npm start                  # http://服务器IP:3000
-
-# PM2 守护（推荐）
-pm2 start server/app.js --name life-os && pm2 save
+npm install --omit=dev && npm run build
+pm2 start server/app.js --name life-os && pm2 save  # pm2 开机自启见 pm2 startup
 ```
 
-记得在安全组放行 3000 端口。海外节点直连 TMDB/GitHub/Steam，全部功能满血。
+日常更新（本地一条命令：构建 → 上传 → 装依赖 → pm2 重启 → 健康检查）：
+
+```bash
+npm run deploy        # scripts/deploy.sh，只覆盖代码不动服务器 .env / data.json
+```
+
+线上（life.xuuhc.cc.cd / cinema.xuuhc.cc.cd）已配置：Let's Encrypt 双域证书（acme.sh 自动续期）、
+pm2 守护 + systemd 开机自启、每日 04:30 自动备份（/www/backup/sites，保留 7 天）。
+记得在安全组放行 80/443 端口。
 
 > 单端口铁律：生产只跑 `npm start`，不要用 `npm run dev`（那是开发用的双进程）。Express 是唯一入口：`/api/*` 走接口，其余全部回落到 SPA 页面。
 
