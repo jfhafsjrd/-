@@ -15,6 +15,9 @@ function toggleTheme() {
   localStorage.setItem('lifeos_theme', theme.value)
   window.dispatchEvent(new CustomEvent('lifeos:theme'))
 }
+
+/* 命令面板由 App.vue 挂载，这里只广播开关事件 */
+const emitPalette = () => window.dispatchEvent(new CustomEvent('lifeos:palette'))
 </script>
 
 <template>
@@ -42,6 +45,11 @@ function toggleTheme() {
     </nav>
 
     <div class="side-foot">
+      <button class="theme-toggle" title="命令面板 (Ctrl+K)" @click="emitPalette">
+        <span class="tt-icon">🔎</span>
+        <span>命令面板</span>
+        <span class="tt-kbd mono">Ctrl K</span>
+      </button>
       <button class="theme-toggle" :title="theme === 'dark' ? '切换到明亮模式' : '切换到暗黑模式'" @click="toggleTheme">
         <span class="tt-icon">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
         <span>{{ theme === 'dark' ? '明亮模式' : '暗黑模式' }}</span>
@@ -196,6 +204,14 @@ function toggleTheme() {
 }
 .tt-icon {
   font-size: 0.95rem;
+}
+.tt-kbd {
+  margin-left: auto;
+  font-size: 0.62rem;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
 }
 .foot-card {
   display: flex;

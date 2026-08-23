@@ -110,7 +110,34 @@ watch(searchQ, (q) => doSearch(q))
 /* ---------- 双池 ---------- */
 const wantList = computed(() => library.value.filter((m) => m.status === 'want'))
 const doneList = computed(() => library.value.filter((m) => m.status === 'done'))
-const currentList = computed(() => (tab.value === 'want' ? wantList.value : doneList.value))
+
+/* ---------- 筛选 + 排序 ---------- */
+const typeFilter = ref('all') // all | movie | tv | anime | doc
+const sortKey = ref('created') // created | tmdbRating | personalRating | year | progress
+const TYPE_CHIPS = [
+  { key: 'all', label: '全部' },
+  { key: 'movie', label: '电影' },
+  { key: 'tv', label: '剧集' },
+  { key: 'anime', label: '动漫' },
+  { key: 'doc', label: '纪录片' },
+]
+const SORTS = [
+  { key: 'created', label: '最新加入' },
+  { key: 'tmdbRating', label: 'TMDB 分' },
+  { key: 'personalRating', label: '个人分' },
+  { key: 'year', label: '年份' },
+  { key: 'progress', label: '追剧进度' },
+]
+const currentList = computed(() => {
+  let list = tab.value === 'want' ? wantList.value : doneList.value
+  if (typeFilter.value !== 'all') list = list.filter((m) => m.type === typeFilter.value)
+  const k = sortKey.value
+  return [...list].sort((a, b) => {
+    if (k === 'progress') return (b.airedEps > 0 ? b.watchedEps / b.airedEps : 0) - (a.airedEps > 0 ? a.watchedEps / a.airedEps : 0)
+    if (k === 'year') return Number(b.year || 0) - Number(a.year || 0)
+    return (b[k] || 0) - (a[k] || 0)
+  })
+})
 
 function moveSlider() {
   requestAnimationFrame(() => {
@@ -669,6 +696,20 @@ async function doTraktSync() {
                 ✅ 已看完 <b class="mono">{{ doneList.length }}</b>
               </button>
             </div>
+            <div class="pool-tools">
+              <div class="type-chips">
+                <button
+                  v-for="t in TYPE_CHIPS"
+                  :key="t.key"
+                  class="chip"
+                  :class="{ on: typeFilter === t.key }"
+                  @click="typeFilter = t.key"
+                >{{ t.label }}</button>
+              </div>
+              <select v-model="sortKey" class="sort-select" aria-label="排序方式">
+                <option v-for="s in SORTS" :key="s.key" :value="s.key">按{{ s.label }}</option>
+              </select>
+            </div>
           </div>
 
           <div v-if="currentList.length" class="mv-grid">
@@ -1144,7 +1185,57 @@ kbd {
 .pool-head {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
   margin-bottom: 18px;
+}
+/* 筛选 + 排序工具栏 */
+.pool-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.type-chips {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 3px;
+}
+.type-chips .chip {
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-size: 0.74rem;
+  padding: 4px 11px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+.type-chips .chip.on {
+  background: var(--accent-soft);
+  color: var(--text-1);
+}
+.sort-select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  color: var(--text-2);
+  font-size: 0.74rem;
+  padding: 5px 12px;
+  cursor: pointer;
+  outline: none;
+}
+.sort-select option {
+  background: var(--card-solid);
+  color: var(--text-1);
+}
+@media (max-width: 720px) {
+  .pool-head {
+    flex-direction: column;
+  }
 }
 .mv-grid {
   display: grid;
@@ -1155,6 +1246,16 @@ kbd {
   display: flex;
   gap: 14px;
   padding: 14px;
+  transition: transform var(--dur) var(--ease), border-color var(--dur), box-shadow var(--dur);
+}
+/* hover：卡片浮起 + 紫晕 + 封面微放大 */
+.mv-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 14px 40px rgba(124, 58, 237, 0.16);
+}
+.mv-card:hover .mv-cover img {
+  transform: scale(1.08);
 }
 .mv-cover {
   flex: 0 0 92px;
@@ -1168,6 +1269,7 @@ kbd {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.45s var(--ease);
 }
 .mv-cover-fallback {
   display: grid;

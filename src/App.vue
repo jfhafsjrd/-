@@ -5,10 +5,23 @@ import MobileHeader from '@/components/layout/MobileHeader.vue'
 import LowPolyBg from '@/components/layout/LowPolyBg.vue'
 import ToastHost from '@/components/common/ToastHost.vue'
 import AuthGate from '@/components/common/AuthGate.vue'
+import CommandPalette from '@/components/common/CommandPalette.vue'
 import { api } from '@/api'
 
 const booting = ref(true)
 onMounted(() => setTimeout(() => (booting.value = false), 350))
+
+/* 命令面板：Ctrl+K / Cmd+K 全局呼出（侧边栏按钮也可触发） */
+const paletteShow = ref(false)
+onMounted(() => {
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault()
+      paletteShow.value = !paletteShow.value
+    }
+  })
+  window.addEventListener('lifeos:palette', () => (paletteShow.value = true))
+})
 
 /* 访问码登录门：启动时查询 + 任意接口 401（令牌失效/被改码）时重新落下 */
 const needAuth = ref(false)
@@ -37,6 +50,8 @@ window.addEventListener('lifeos:401', () => {
   </Transition>
 
   <AuthGate v-if="needAuth" />
+
+  <CommandPalette v-model="paletteShow" />
 
   <Sidebar />
   <MobileHeader />
