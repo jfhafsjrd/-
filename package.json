@@ -1,0 +1,32 @@
+{
+  "name": "life-os",
+  "version": "5.0.0",
+  "description": "Life OS 探索者仪表盘 — 暗黑极客风个人数字生活操作系统",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c blue,magenta \"node server/app.js\" \"vite\"",
+    "build": "vite build",
+    "start": "node server/app.js",
+    "preview": "npm run build && npm start",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "fflate": "^0.8.3",
+    "node-cron": "^3.0.3",
+    "pinia": "^2.1.7",
+    "undici": "^8.10.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "concurrently": "^8.2.0",
+    "vite": "^5.2.0"
+  }
+}
