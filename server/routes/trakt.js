@@ -152,14 +152,38 @@ function mapTraktItem(entry, type, personalRating, extra = {}) {
   }
 }
 
-/** 已看剧集的追剧进度：watched/shows 返回逐季集数列表 + show.aired_episodes */
-function progressOf(item) {
-  if (!Array.isArray(item.seasons)) return {}
-  let watched = 0
-  for (const s of item.seasons) watched += Array.isArray(s.episodes) ? s.episodes.length : 0
-  const out = { watchedEps: watched, airedEps: Number(item.show?.aired_episodes || 0) }
-  if (item.last_watched_at) out.lastWatchedAt = item.last_watched_at
-  return watched > 0 ? out : {}
+/**
+ * 追剧进度：watched/shows 只有 plays 汇总、watched/episodes 不带剧归属，
+ * 逐剧调 /shows/{id}/progress/watched 拿每季 aired/completed + 下一集。
+ * shows 传 watched/watchlist 两个列表的 show 对象数组，失败不阻断主同步。
+ */
+async function fetchProgress(h, shows) {
+  const byTmdb = new Map()
+  const seen = new Set()
+  for (const show of shows) {
+    const traktId = show?.ids?.trakt
+    const tmdbId = show?.ids?.tmdb
+    if (!traktId || !tmdbId || seen.has(traktId)) continue
+    seen.add(traktId)
+    try {
+      const p = await fetchJSON(`${API}/shows/${traktId}/progress/watched`, h)
+      if (!p?.seasons) continue
+      const watchedEps = p.seasons.reduce((n, s) => n + (s.completed || 0), 0)
+      if (watchedEps <= 0) continue
+      const rec = {
+        watchedEps,
+        airedEps: p.seasons.reduce((n, s) => n + (s.aired || 0), 0),
+        lastWatchedAt: p.last_watched_at || '',
+      }
+      if (p.next_episode?.season && p.next_episode?.number) {
+        rec.nextEpisode = `S${p.next_episode.season}E${p.next_episode.number}`
+      }
+      byTmdb.set(tmdbId, rec)
+    } catch {
+      /* 单剧失败跳过，不影响其余 */
+    }
+  }
+  return byTmdb
 }
 
 /**
@@ -210,6 +234,13 @@ async function runSync() {
     if (id) ratingByTmdb.set(id, r.rating)
   }
 
+  /* 追剧进度（剧集在看/已看均可能带进度） */
+  const progressByTmdb = await fetchProgress(h, [...wlShows, ...wdShows].map((e) => e.show))
+  const prog = (id) => {
+    const p = progressByTmdb.get(id)
+    return p && p.watchedEps > 0 ? p : {}
+  }
+
   /* 第一遍：全部条目映射 + 分流「已存在（只补评分）」和「新增（待中文反查）」 */
   const result = { wantAdded: 0, doneAdded: 0, skipped: 0, rated: 0, enriched: 0 }
   const fresh = []
@@ -229,6 +260,7 @@ async function runSync() {
         patch.watchedEps = mapped.watchedEps
         patch.airedEps = mapped.airedEps
         if (mapped.lastWatchedAt) patch.lastWatchedAt = mapped.lastWatchedAt
+        patch.nextEpisode = mapped.nextEpisode || ''
       }
       if (Object.keys(patch).length) movies().updateOne(existing.id, patch)
       result.skipped++
@@ -238,9 +270,9 @@ async function runSync() {
   }
 
   for (const item of wlMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0), 'want')
-  for (const item of wlShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0), 'want')
+  for (const item of wlShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, prog(item.show?.ids?.tmdb)), 'want')
   for (const item of wdMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0), 'done')
-  for (const item of wdShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, progressOf(item)), 'done')
+  for (const item of wdShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, prog(item.show?.ids?.tmdb)), 'done')
 
   /* 第二遍：新增条目统一中文反查后入库 */
   await enrichByTmdb(fresh)

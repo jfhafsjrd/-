@@ -652,6 +652,7 @@ async function doTraktSync() {
                 </p>
                 <div v-if="m.airedEps > 0" class="mv-progress" :class="{ over: (m.watchedEps || 0) >= m.airedEps }">
                   <span class="mv-eps mono">📺 {{ m.watchedEps || 0 }}/{{ m.airedEps }} 集</span>
+                  <span v-if="m.nextEpisode && (m.watchedEps || 0) < m.airedEps" class="mv-next mono">→ {{ m.nextEpisode }}</span>
                   <span class="mv-bar"><i :style="{ width: Math.min(100, Math.round(((m.watchedEps || 0) / m.airedEps) * 100)) + '%' }"></i></span>
                 </div>
                 <p v-if="m.comment" class="mv-comment">“{{ m.comment }}”</p>
@@ -1119,6 +1120,11 @@ kbd {
   color: var(--text-2);
 }
 .mv-eps {
+  white-space: nowrap;
+}
+.mv-next {
+  font-size: 0.72rem;
+  color: #fcd34d;
   white-space: nowrap;
 }
 .mv-bar {
