@@ -46,6 +46,7 @@ export const api = {
   /* 影视 */
   movies: {
     list: (params) => http.get('/movies', { params }),
+    stats: () => http.get('/movies/stats'),
     search: (q) => http.get('/movies/search', { params: { q } }),
     trending: () => http.get('/movies/trending'),
     add: (data) => http.post('/movies', data),

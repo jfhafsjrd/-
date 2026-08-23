@@ -10,6 +10,7 @@
 import { Router } from 'express'
 import { collection } from '../db.js'
 import { fetchJSON } from '../utils.js'
+import { pushToTrakt } from './trakt.js'
 
 const router = Router()
 const movies = () => collection('movies')
@@ -105,6 +106,37 @@ router.get('/trending', async (req, res) => {
   }
 })
 
+/* ---------- 年度观看统计 ---------- */
+router.get('/stats', (req, res) => {
+  const all = movies().find()
+  const done = all.filter((m) => m.status === 'done')
+  const year = new Date().getFullYear()
+  const yearDone = done.filter((m) => String(m.watchedAt || '').startsWith(String(year)))
+  const rated = done.filter((m) => m.personalRating > 0)
+
+  const months = Array.from({ length: 12 }, () => 0)
+  for (const m of yearDone) {
+    const mo = Number(String(m.watchedAt).slice(5, 7))
+    if (mo >= 1 && mo <= 12) months[mo - 1]++
+  }
+  const byType = {}
+  for (const m of yearDone) {
+    const label = { movie: '电影', tv: '剧集', anime: '动漫', doc: '纪录片' }[m.type] || '其他'
+    byType[label] = (byType[label] || 0) + 1
+  }
+
+  res.json({
+    year,
+    yearDoneCount: yearDone.length,
+    totalDone: done.length,
+    wantCount: all.length - done.length,
+    episodes: all.reduce((n, m) => n + (m.airedEps > 0 ? m.watchedEps || 0 : 0), 0),
+    avgRating: rated.length ? Number((rated.reduce((n, m) => n + m.personalRating, 0) / rated.length).toFixed(1)) : 0,
+    months,
+    byType,
+  })
+})
+
 /* ---------- 本地库 ---------- */
 router.get('/', (req, res) => {
   const { status, keyword } = req.query
@@ -152,7 +184,7 @@ function syncReservation(movie) {
   else evs.insert(payload)
 }
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const patch = { ...req.body }
   delete patch.id
   delete patch.createdAt
@@ -161,7 +193,19 @@ router.put('/:id', (req, res) => {
   const updated = movies().updateOne(req.params.id, patch)
   if (!updated) return res.status(404).json({ error: '条目不存在' })
   syncReservation(updated)
-  res.json(updated)
+
+  /* 双向同步：标完/评分推回 Trakt（未授权时 pushToTrakt 秒回 false） */
+  let traktPushed = false
+  const ratingPush = Number(patch.personalRating) || 0
+  if ((patch.status === 'done' || ratingPush > 0) && updated.tmdbId > 0) {
+    try {
+      traktPushed = await pushToTrakt(updated, ratingPush)
+    } catch {
+      /* 推送失败不影响本地保存 */
+    }
+    if (traktPushed) console.log(`[trakt] 已推送《${updated.title}》→ ${patch.status === 'done' ? '历史' : ''}${ratingPush > 0 ? ' 评分' : ''}`)
+  }
+  res.json({ ...updated, traktPushed })
 })
 
 router.delete('/:id', (req, res) => {

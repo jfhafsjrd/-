@@ -1,11 +1,20 @@
 <script setup>
 /** 桌面侧边栏 — 由模块注册表驱动 */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { modules } from '@/router/modules'
 
 const route = useRoute()
 const navItems = computed(() => modules)
+
+/* ---------- 主题切换 ---------- */
+const theme = ref(localStorage.getItem('lifeos_theme') === 'light' ? 'light' : 'dark')
+function toggleTheme() {
+  theme.value = theme.value === 'light' ? 'dark' : 'light'
+  document.documentElement.dataset.theme = theme.value
+  localStorage.setItem('lifeos_theme', theme.value)
+  window.dispatchEvent(new CustomEvent('lifeos:theme'))
+}
 </script>
 
 <template>
@@ -33,6 +42,10 @@ const navItems = computed(() => modules)
     </nav>
 
     <div class="side-foot">
+      <button class="theme-toggle" :title="theme === 'dark' ? '切换到明亮模式' : '切换到暗黑模式'" @click="toggleTheme">
+        <span class="tt-icon">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
+        <span>{{ theme === 'dark' ? '明亮模式' : '暗黑模式' }}</span>
+      </button>
       <div class="foot-card">
         <span class="pulse-dot"></span>
         <span>系统运行中</span>
@@ -160,6 +173,29 @@ const navItems = computed(() => modules)
 .side-foot {
   padding-top: 12px;
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+.theme-toggle:hover {
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+.tt-icon {
+  font-size: 0.95rem;
 }
 .foot-card {
   display: flex;

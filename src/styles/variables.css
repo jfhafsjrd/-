@@ -61,3 +61,37 @@
   --z-modal: 100;
   --z-toast: 120;
 }
+
+/* ============ 明亮主题 — data-theme="light" 时整体切换 ============ */
+[data-theme='light'] {
+  --bg-0: #f2f3fa;
+  --bg-1: #eaeaF5;
+  --bg-2: #ffffff;
+
+  --card: rgba(255, 255, 255, 0.82);
+  --card-hover: rgba(255, 255, 255, 0.97);
+  --card-solid: #ffffff;
+
+  --border: rgba(30, 32, 72, 0.1);
+  --border-strong: rgba(139, 92, 246, 0.45);
+
+  --text-1: #23263d;
+  --text-2: #565b78;
+  --text-3: #8a8fa8;
+
+  --accent: #8b5cf6;
+  --accent-2: #7c4ef0;
+  --accent-3: #4f46e5;
+  --accent-soft: rgba(139, 92, 246, 0.12);
+  --accent-glow: rgba(139, 92, 246, 0.32);
+  --accent-grad: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 100%);
+
+  --success: #0d9d74;
+  --warning: #c77d06;
+  --danger: #dc4a4a;
+  --info: #0784c3;
+  --success-soft: rgba(13, 157, 116, 0.12);
+  --warning-soft: rgba(199, 125, 6, 0.12);
+  --danger-soft: rgba(220, 74, 74, 0.1);
+  --info-soft: rgba(7, 132, 195, 0.12);
+}

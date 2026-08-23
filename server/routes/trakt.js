@@ -240,6 +240,8 @@ async function runSync() {
     const p = progressByTmdb.get(id)
     return p && p.watchedEps > 0 ? p : {}
   }
+  /* 真实观看日期：Trakt 的 last_watched_at，替代"同步那一刻" */
+  const watchedAtOf = (item) => item?.last_watched_at || ''
 
   /* 第一遍：全部条目映射 + 分流「已存在（只补评分）」和「新增（待中文反查）」 */
   const result = { wantAdded: 0, doneAdded: 0, skipped: 0, rated: 0, enriched: 0 }
@@ -255,6 +257,7 @@ async function runSync() {
         result.rated++
       }
       if (!existing.cover && mapped.cover) patch.cover = mapped.cover
+      if (mapped.traktWatchedAt && !existing.watchedAt) patch.watchedAt = mapped.traktWatchedAt
       /* 追剧进度：仅 Trakt 维护的字段，有变化才写 */
       if (mapped.watchedEps !== undefined && (existing.watchedEps !== mapped.watchedEps || existing.airedEps !== mapped.airedEps)) {
         patch.watchedEps = mapped.watchedEps
@@ -271,14 +274,19 @@ async function runSync() {
 
   for (const item of wlMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0), 'want')
   for (const item of wlShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, prog(item.show?.ids?.tmdb)), 'want')
-  for (const item of wdMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0), 'done')
-  for (const item of wdShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, prog(item.show?.ids?.tmdb)), 'done')
+  for (const item of wdMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0, { traktWatchedAt: watchedAtOf(item) }), 'done')
+  for (const item of wdShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, { ...prog(item.show?.ids?.tmdb), traktWatchedAt: watchedAtOf(item) }), 'done')
 
   /* 第二遍：新增条目统一中文反查后入库 */
   await enrichByTmdb(fresh)
   result.enriched = fresh.length
   for (const { mapped, status } of fresh) {
-    movies().insert({ ...mapped, comment: '', reservationTime: '', watchedAt: status === 'done' ? new Date().toISOString() : '' })
+    movies().insert({
+      ...mapped,
+      comment: '',
+      reservationTime: '',
+      watchedAt: mapped.traktWatchedAt || (status === 'done' ? new Date().toISOString() : ''),
+    })
     if (status === 'want') result.wantAdded++
     else result.doneAdded++
   }
@@ -344,6 +352,37 @@ router.get('/calendar', async (req, res) => {
 
 function ymdLocal(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
+/* ---------- 双向同步：Life OS → Trakt ----------
+ * 标"看完了"或打分时推回 Trakt，保持两边记录一致：
+ *   电影 done → 入历史 + 移出待看；评分(1-10) → 写评分（电影和剧集都推）
+ *   剧集不推历史 —— 分集观看以 Trakt 播放器侧记录为准，避免误标全季
+ * 未授权/未配置时直接返回 false，PUT 路由无感跳过。
+ */
+export async function pushToTrakt(movie, rating = 0) {
+  const token = await getAccessToken()
+  if (!token || !CLIENT_ID || !movie?.tmdbId) return false
+  const h = { headers: traktHeaders(token) }
+  const ids = { ids: { tmdb: movie.tmdbId } }
+  try {
+    if (movie.type !== 'tv' && movie.status === 'done') {
+      const body = movie.watchedAt ? { movies: [{ ...ids, watched_at: movie.watchedAt }] } : { movies: [ids] }
+      await fetchJSON(`${API}/sync/history`, { method: 'POST', ...h, body: JSON.stringify(body) })
+      await fetchJSON(`${API}/sync/watchlist/remove`, { method: 'POST', ...h, body: JSON.stringify({ movies: [ids] }) }).catch(() => {})
+    }
+    if (rating >= 1 && rating <= 10) {
+      const kind = movie.type === 'tv' ? 'shows' : 'movies'
+      await fetchJSON(`${API}/sync/ratings`, {
+        method: 'POST', ...h,
+        body: JSON.stringify({ [kind]: [{ rating: Math.round(rating), ids: { tmdb: movie.tmdbId } }] }),
+      })
+    }
+    return true
+  } catch (err) {
+    console.warn(`[trakt] 推送《${movie.title}》失败:`, err.message)
+    return false
+  }
 }
 
 /* ---------- 网页抓取导入（绕过 API 会员墙的免费通道） ----------

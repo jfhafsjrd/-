@@ -40,9 +40,17 @@ function nodeXY(n, t) {
   ]
 }
 
-/** 三角形填充色：按屏幕位置从暗紫到深靛蓝，整体压得很暗 */
+/** 三角形填充色：按主题取色板 —— 暗色压暗紫靛蓝，亮色提浅薰衣草 */
+const isLight = () => document.documentElement.dataset.theme === 'light'
+
 function faceColor(x, y, w, h) {
   const k = (x / w) * 0.6 + (y / h) * 0.4
+  if (isLight()) {
+    const r = Math.round(216 + k * 20)
+    const g = Math.round(208 + k * 18)
+    const b = Math.round(244 + k * 10)
+    return [r, g, b]
+  }
   const r = Math.round(38 + k * 26)
   const g = Math.round(20 + k * 22)
   const b = Math.round(66 + k * 40)
@@ -84,18 +92,19 @@ function draw(t) {
         ctx.lineTo(tri[2], tri[3])
         ctx.lineTo(tri[4], tri[5])
         ctx.closePath()
-        ctx.fillStyle = `rgba(${r1},${g1},${b1},0.24)`
+        ctx.fillStyle = `rgba(${r1},${g1},${b1},${isLight() ? 0.5 : 0.24})`
         ctx.fill()
-        ctx.strokeStyle = `rgba(168,120,255,0.045)`
+        ctx.strokeStyle = isLight() ? 'rgba(139,92,246,0.07)' : 'rgba(168,120,255,0.045)'
         ctx.lineWidth = 1
         ctx.stroke()
       }
     }
   }
-  // 轻微暗角，增强层次
+  // 轻微暗角，增强层次（亮色主题用白角）
+  const corner = isLight() ? 'rgba(255,255,255,0.5)' : 'rgba(7,8,13,0.55)'
   const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75)
-  vg.addColorStop(0, 'rgba(7,8,13,0)')
-  vg.addColorStop(1, 'rgba(7,8,13,0.55)')
+  vg.addColorStop(0, isLight() ? 'rgba(255,255,255,0)' : 'rgba(7,8,13,0)')
+  vg.addColorStop(1, corner)
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, w, h)
   void cellW
@@ -135,6 +144,8 @@ function setRunning(v) {
 onMounted(() => {
   resize()
   window.addEventListener('resize', resize)
+  /* 主题切换时静态模式（reduced-motion）也要立即重绘一帧 */
+  window.addEventListener('lifeos:theme', () => draw(performance.now()))
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   if (reduced) {
     draw(0)

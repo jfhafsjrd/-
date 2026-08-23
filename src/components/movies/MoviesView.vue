@@ -63,6 +63,17 @@ async function loadLibrary() {
   }
 }
 
+/* ---------- 年度观看统计 ---------- */
+const stats = ref(null)
+const statMax = computed(() => Math.max(1, ...(stats.value?.months || [])))
+async function loadStats() {
+  try {
+    stats.value = await api.movies.stats()
+  } catch {
+    /* 静默：统计失败不影响主体 */
+  }
+}
+
 async function loadTrending() {
   trendingError.value = ''
   try {
@@ -75,6 +86,7 @@ async function loadTrending() {
 onMounted(() => {
   loadLibrary()
   loadTrending()
+  loadStats()
   api.trakt.status().then((s) => (traktConfigured.value = s.configured)).catch(() => {})
 })
 
@@ -153,9 +165,10 @@ function openWatched(movie) {
 
 async function submitWatched({ personalRating, comment }) {
   const m = watchedMovie.value
-  await api.movies.update(m.id, { status: 'done', personalRating, comment, reservationTime: '' })
-  toast.success(`《${m.title}》归档完成`)
+  const r = await api.movies.update(m.id, { status: 'done', personalRating, comment, reservationTime: '' })
+  toast.success(r.traktPushed ? `《${m.title}》归档完成 · 已同步 Trakt ✓` : `《${m.title}》归档完成`)
   await loadLibrary()
+  loadStats()
 }
 
 async function removeMovie(movie) {
@@ -469,6 +482,35 @@ async function doTraktSync() {
       </div>
     </div>
 
+    <!-- ============ 年度统计条 ============ -->
+    <section v-if="stats" class="stat-strip glass-card">
+      <div class="ss-tile">
+        <span class="ss-num mono">{{ stats.yearDoneCount }}</span>
+        <span class="ss-label">{{ stats.year }} 年看完</span>
+      </div>
+      <div class="ss-tile">
+        <span class="ss-num mono">{{ stats.totalDone }}</span>
+        <span class="ss-label">累计看完</span>
+      </div>
+      <div class="ss-tile">
+        <span class="ss-num mono">{{ stats.episodes }}</span>
+        <span class="ss-label">追剧集数</span>
+      </div>
+      <div class="ss-tile">
+        <span class="ss-num mono">{{ stats.avgRating || '—' }}</span>
+        <span class="ss-label">平均个人分</span>
+      </div>
+      <div class="ss-chart" :title="stats.year + ' 年各月看完部数'">
+        <i
+          v-for="(n, i) in stats.months"
+          :key="i"
+          class="ss-bar"
+          :style="{ height: Math.max(4, Math.round((n / statMax) * 100)) + '%' }"
+          :class="{ zero: !n }"
+        ><em v-if="n">{{ n }}</em></i>
+      </div>
+    </section>
+
     <!-- ============ Trakt 授权弹窗 ============ -->
     <Modal :show="traktShow" title="连接 Trakt.tv" width="420px" @close="traktShow = false; stopPoll()">
       <div class="trakt-auth">
@@ -705,6 +747,72 @@ async function doTraktSync() {
 
 <style scoped>
 /* ---------- 页面根与 hero 层叠 ---------- */
+/* 年度统计条 */
+.stat-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.ss-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px 18px 2px 0;
+  border-right: 1px solid var(--border);
+  min-width: 86px;
+}
+.ss-num {
+  font-size: 1.45rem;
+  font-weight: 750;
+  background: var(--accent-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ss-label {
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+.ss-chart {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 180px;
+  height: 52px;
+}
+.ss-bar {
+  flex: 1;
+  position: relative;
+  border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(180deg, #a855f7, #6366f1);
+  opacity: 0.85;
+}
+.ss-bar.zero {
+  background: rgba(255, 255, 255, 0.07);
+  opacity: 1;
+}
+.ss-bar em {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-style: normal;
+  color: var(--text-3);
+}
+@media (max-width: 768px) {
+  .stat-strip {
+    flex-wrap: wrap;
+  }
+  .ss-chart {
+    min-width: 100%;
+  }
+}
+
 .mv-root {
   position: relative;
 }

@@ -29,17 +29,23 @@ function onImgError() {
 <template>
   <Modal :show="show && !!item" :title="item?.title || '详情'" width="640px" @close="emit('close')">
     <div v-if="item" class="detail">
-      <div class="poster">
-        <div v-if="previewFailed" class="poster-fallback">🎞️</div>
-        <img v-else :src="tmdbPoster(item.poster, 'w500')" :alt="item.title" @error="onImgError" />
+      <div v-if="item.backdrop && !previewFailed" class="backdrop">
+        <img :src="tmdbPoster(item.backdrop, 'w780')" :alt="item.title" loading="lazy" @error="previewFailed = true" />
+        <span class="backdrop-grad"></span>
       </div>
-      <div class="info">
-        <div class="badges">
-          <span class="tag">{{ item.typeLabel }}</span>
-          <span class="tag plain mono" v-if="item.year">{{ item.year }}</span>
-          <span class="tag info mono" v-if="item.tmdbRating">★ {{ item.tmdbRating.toFixed(1) }}</span>
+      <div class="detail-row">
+        <div class="poster">
+          <div v-if="previewFailed" class="poster-fallback">🎞️</div>
+          <img v-else :src="tmdbPoster(item.poster, 'w500')" :alt="item.title" @error="onImgError" />
         </div>
-        <p class="overview">{{ item.overview || '暂无简介' }}</p>
+        <div class="info">
+          <div class="badges">
+            <span class="tag">{{ item.typeLabel }}</span>
+            <span class="tag plain mono" v-if="item.year">{{ item.year }}</span>
+            <span class="tag info mono" v-if="item.tmdbRating">★ {{ item.tmdbRating.toFixed(1) }}</span>
+          </div>
+          <p class="overview">{{ item.overview || '暂无简介' }}</p>
+        </div>
       </div>
     </div>
     <template #footer>
@@ -55,6 +61,30 @@ function onImgError() {
 
 <style scoped>
 .detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* 大图头部：剧照横幅 + 底部渐变过渡 */
+.backdrop {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 6.5;
+  background: linear-gradient(160deg, #23203a, #141625);
+  border: 1px solid var(--border);
+}
+.backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.backdrop-grad {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(10, 11, 16, 0.72));
+}
+.detail-row {
   display: grid;
   grid-template-columns: 200px 1fr;
   gap: 20px;
@@ -99,7 +129,7 @@ function onImgError() {
   overflow: hidden;
 }
 @media (max-width: 560px) {
-  .detail {
+  .detail-row {
     grid-template-columns: 1fr;
   }
   .poster {

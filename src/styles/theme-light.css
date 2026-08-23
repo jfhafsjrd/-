@@ -1,0 +1,47 @@
+/* ============ 明亮主题修正层 ============
+ * 覆盖各组件里按暗底假设写死的高光/白色叠加。
+ * 统一用 html[data-theme='light'] 前缀抬高优先级，压过 scoped 样式的同特异性规则。
+ */
+html[data-theme='light'] .sidebar {
+  background: rgba(255, 255, 255, 0.78);
+}
+html[data-theme='light'] .nav-item:hover {
+  background: rgba(30, 32, 72, 0.05);
+}
+html[data-theme='light'] .nav-item.active {
+  color: #3b1d8a;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(79, 70, 229, 0.06));
+}
+html[data-theme='light'] .btn {
+  background: rgba(30, 32, 72, 0.05);
+  color: var(--text-1);
+}
+html[data-theme='light'] .btn.primary {
+  color: #fff;
+}
+html[data-theme='light'] .hero-title {
+  background: linear-gradient(115deg, #2b2350 40%, #7c3aed 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+html[data-theme='light'] .hero-sub b {
+  color: #6d28d9;
+}
+html[data-theme='light'] .search-box {
+  background: rgba(30, 32, 72, 0.05);
+}
+html[data-theme='light'] .input {
+  background: rgba(30, 32, 72, 0.05);
+  color: var(--text-1);
+}
+html[data-theme='light'] .foot-card {
+  background: rgba(13, 157, 116, 0.08);
+}
+html[data-theme='light'] .lowpoly {
+  opacity: 0.4;
+}
+/* 暗色系事件/标签微调（半透明白底在亮色下对比不足） */
+html[data-theme='light'] .cal-ev,
+html[data-theme='light'] .wk-ev {
+  filter: saturate(1.15);
+}
