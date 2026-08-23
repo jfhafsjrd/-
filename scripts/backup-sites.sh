@@ -5,10 +5,11 @@ DEST=/www/backup/sites
 mkdir -p "$DEST"
 STAMP=$(date +%Y%m%d_%H%M%S)
 
-# life-os：业务数据 + 密钥配置（server 目录排除 node_modules）
+# life-os：业务数据 + 密钥配置（排除 node_modules 和书籍文件——书籍体积大，可重新导入）
 tar -czf "$DEST/lifeos_${STAMP}.tar.gz" \
   -C /www/wwwroot/dashboard \
   --exclude='server/node_modules' \
+  --exclude='server/books' \
   .env server/data.json server/steam_cache.json server 2>/dev/null
 
 # family-cinema：全部 JSON 状态 + 代码（排除 node_modules）

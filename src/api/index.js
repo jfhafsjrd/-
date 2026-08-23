@@ -124,6 +124,35 @@ export const api = {
 
   /* 天气 */
   weather: (city) => http.get('/weather', { params: city ? { city } : {} }),
+
+  /* 阅读 */
+  reader: {
+    list: () => http.get('/reader'),
+    upload: (file, onProgress) =>
+      new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', `/api/reader/upload?name=${encodeURIComponent(file.name)}`)
+        const token = localStorage.getItem('lifeos_token')
+        if (token) xhr.setRequestHeader('X-Auth-Token', token)
+        xhr.upload.onprogress = (e) => e.total && onProgress?.(Math.round((e.loaded / e.total) * 100))
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText)
+            xhr.status < 300 ? resolve(data) : reject(new Error(data.error || `上传失败(${xhr.status})`))
+          } catch {
+            reject(new Error('上传失败：响应异常'))
+          }
+        }
+        xhr.onerror = () => reject(new Error('上传失败：网络错误'))
+        xhr.send(file)
+      }),
+    chapters: (id) => http.get(`/reader/${id}/chapters`),
+    text: (id, chapter) => http.get(`/reader/${id}/text`, { params: { chapter } }),
+    coverUrl: (id) => `/api/reader/${id}/cover`,
+    pageUrl: (id, n) => `/api/reader/${id}/page/${n}`,
+    saveProgress: (id, progress, pct) => http.put(`/reader/${id}/progress`, { progress, pct }),
+    remove: (id) => http.delete(`/reader/${id}`),
+  },
 }
 
 export default api

@@ -44,6 +44,7 @@ const modules = {
   events: (await import('./routes/events.js')).default,
   links: (await import('./routes/links.js')).default,
   github: (await import('./routes/github.js')).default,
+  reader: (await import('./routes/reader.js')).default,
 }
 for (const [name, router] of Object.entries(modules)) {
   app.use(`/api/${name}`, router)
