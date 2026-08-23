@@ -93,7 +93,7 @@ async function submit() {
   justify-content: center;
 }
 .auth-error {
-  color: #f87171;
+  color: var(--danger);
   font-size: 0.82rem;
   min-height: 1em;
 }

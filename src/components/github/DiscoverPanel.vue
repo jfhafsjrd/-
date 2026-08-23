@@ -361,7 +361,7 @@ function searchTag(t) {
   cursor: pointer;
 }
 .refresh-btn:hover {
-  color: #c98bff;
+  color: var(--t-accent);
   border-color: var(--border-strong);
 }
 .dc-grid {
@@ -404,7 +404,7 @@ function searchTag(t) {
   text-overflow: ellipsis;
 }
 .dc-name:hover {
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .dc-track {
   flex-shrink: 0;

@@ -225,7 +225,7 @@ const favicon = (url) => {
     <!-- 删除确认 -->
     <Modal :show="!!delTarget" title="删除书签" width="360px" @close="delTarget = null">
       <p style="font-size: 0.92rem">
-        确定删除 <strong style="color: #c98bff">{{ delTarget?.title }}</strong> 吗？
+        确定删除 <strong style="color: var(--t-accent)">{{ delTarget?.title }}</strong> 吗？
       </p>
       <template #footer>
         <button class="btn" @click="delTarget = null">取消</button>

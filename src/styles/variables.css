@@ -37,6 +37,15 @@
   --danger-soft: rgba(248, 113, 113, 0.14);
   --info-soft: rgba(56, 189, 248, 0.14);
 
+  /* 语义文字色（高亮/彩色文字专用，两主题各自调校对比度） */
+  --t-accent: #c98bff;
+  --t-lavender: #d8b4fe;
+
+  /* 选区与滚动条（主题感知） */
+  --sel-bg: rgba(168, 85, 247, 0.35);
+  --sel-fg: #fff;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.09);
+
   /* 几何 */
   --radius: 14px;
   --radius-lg: 20px;
@@ -89,14 +98,21 @@
   --accent-glow: rgba(139, 92, 246, 0.32);
   --accent-grad: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 100%);
 
-  --success: #0d9d74;
-  --warning: #c77d06;
-  --danger: #dc4a4a;
-  --info: #0784c3;
-  --success-soft: rgba(13, 157, 116, 0.12);
-  --warning-soft: rgba(199, 125, 6, 0.12);
-  --danger-soft: rgba(220, 74, 74, 0.1);
-  --info-soft: rgba(7, 132, 195, 0.12);
+  --success: #047857;
+  --warning: #9a6203;
+  --danger: #c53030;
+  --info: #0369a1;
+  --success-soft: rgba(4, 120, 87, 0.12);
+  --warning-soft: rgba(154, 98, 3, 0.12);
+  --danger-soft: rgba(197, 48, 48, 0.1);
+  --info-soft: rgba(3, 105, 161, 0.12);
+
+  --t-accent: #7c22ce;
+  --t-lavender: #6d28d9;
+
+  --sel-bg: rgba(139, 92, 246, 0.22);
+  --sel-fg: #2b2350;
+  --scrollbar-thumb: rgba(30, 32, 72, 0.18);
 
   --scrim: 234, 234, 245;
 }

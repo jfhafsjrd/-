@@ -527,7 +527,7 @@ const syncPct = computed(() =>
   cursor: pointer;
 }
 .g-name:hover {
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .g-facts {
   display: flex;

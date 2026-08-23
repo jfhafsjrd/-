@@ -19,6 +19,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.35s var(--ease), color 0.35s var(--ease);
 }
 
 /* 顶层渐变 + 两角光晕，垫在 Canvas 之下 */
@@ -44,7 +45,7 @@ a {
   transition: color var(--dur-fast);
 }
 a:hover {
-  color: #c084fc;
+  color: var(--t-accent);
 }
 
 button {
@@ -61,8 +62,8 @@ textarea {
 }
 
 ::selection {
-  background: rgba(168, 85, 247, 0.35);
-  color: #fff;
+  background: var(--sel-bg);
+  color: var(--sel-fg);
 }
 
 /* 滚动条 */
@@ -74,7 +75,7 @@ textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.09);
+  background: var(--scrollbar-thumb);
   border-radius: 99px;
   border: 2px solid var(--bg-0);
 }

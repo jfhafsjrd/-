@@ -531,7 +531,7 @@ async function removeEvent(ev) {
   gap: 5px;
 }
 .cal-day.weekend {
-  color: #f87171;
+  color: var(--danger);
 }
 .today-dot {
   width: 5px;
@@ -559,22 +559,22 @@ async function removeEvent(ev) {
 .cal-ev.todo {
   background: rgba(168, 85, 247, 0.12);
   border-left-color: #a855f7;
-  color: #d8b4fe;
+  color: var(--t-lavender);
 }
 .cal-ev.movie {
   background: rgba(56, 189, 248, 0.12);
   border-left-color: #38bdf8;
-  color: #7dd3fc;
+  color: var(--info);
 }
 .cal-ev.manual {
   background: rgba(52, 211, 153, 0.12);
   border-left-color: #34d399;
-  color: #6ee7b7;
+  color: var(--success);
 }
 .cal-ev.trakt {
   background: rgba(251, 191, 36, 0.12);
   border-left-color: #fbbf24;
-  color: #fcd34d;
+  color: var(--warning);
 }
 .cal-ev.more {
   color: var(--text-3);

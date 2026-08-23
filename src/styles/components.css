@@ -184,7 +184,7 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   background: var(--accent-soft);
-  color: #c98bff;
+  color: var(--t-accent);
   border: 1px solid rgba(168, 85, 247, 0.22);
 }
 .tag.success {
@@ -352,7 +352,7 @@
   font-size: 0.72rem;
   font-family: var(--mono);
   background: var(--accent-soft);
-  color: #c98bff;
+  color: var(--t-accent);
   border: 1px solid rgba(168, 85, 247, 0.25);
 }
 

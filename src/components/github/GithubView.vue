@@ -428,7 +428,7 @@ onMounted(() => setTimeout(moveSlider, 80))
   white-space: nowrap;
 }
 .rc-name:hover {
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .rc-ops {
   display: flex;
@@ -486,7 +486,7 @@ onMounted(() => setTimeout(moveSlider, 80))
 .rc-tag {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .rc-rel-time {
   font-size: 0.72rem;
@@ -506,7 +506,7 @@ onMounted(() => setTimeout(moveSlider, 80))
   font-size: 0.74rem;
   font-weight: 600;
   background: var(--accent-soft);
-  color: #d8b4fe;
+  color: var(--t-lavender);
   border: 1px solid rgba(168, 85, 247, 0.3);
   transition: all var(--dur-fast);
 }
@@ -547,7 +547,7 @@ onMounted(() => setTimeout(moveSlider, 80))
 .rel-tag {
   font-size: 1rem;
   font-weight: 700;
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .rel-head time {
   font-size: 0.72rem;

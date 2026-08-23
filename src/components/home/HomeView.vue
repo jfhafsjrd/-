@@ -280,7 +280,7 @@ async function toggleTodo(t) {
   color: var(--text-2);
 }
 .hero-sub b {
-  color: #c98bff;
+  color: var(--t-accent);
   font-family: var(--mono);
 }
 
@@ -423,7 +423,7 @@ async function toggleTodo(t) {
 }
 .st-link {
   font-size: 0.8rem;
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .st-badge {
   padding: 3px 10px;
@@ -481,7 +481,7 @@ async function toggleTodo(t) {
   color: var(--text-3);
 }
 .panel-more:hover {
-  color: #c98bff;
+  color: var(--t-accent);
 }
 .panel-empty {
   display: flex;

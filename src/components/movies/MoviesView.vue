@@ -894,7 +894,7 @@ async function doTraktSync() {
   border-radius: 12px;
   background: rgba(234, 43, 47, 0.08);
   border: 1px dashed rgba(234, 43, 47, 0.4);
-  color: #ff6b6e;
+  color: var(--danger);
   user-select: all;
 }
 .ta-waiting {
@@ -1334,7 +1334,7 @@ kbd {
 }
 .mv-next {
   font-size: 0.72rem;
-  color: #fcd34d;
+  color: var(--warning);
   white-space: nowrap;
 }
 .mv-bar {
