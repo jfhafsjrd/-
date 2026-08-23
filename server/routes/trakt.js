@@ -137,7 +137,7 @@ const TMDB_KEY = process.env.TMDB_API_KEY || ''
 const TMDB = 'https://api.themoviedb.org/3'
 
 /** Trakt 条目 → 本地 movie 字段（cover 存完整 URL，与 TMDB path 并存，前端按前缀区分） */
-function mapTraktItem(entry, type, personalRating) {
+function mapTraktItem(entry, type, personalRating, extra = {}) {
   const img = entry.images?.poster?.full || ''
   return {
     tmdbId: entry.ids?.tmdb || 0,
@@ -148,7 +148,18 @@ function mapTraktItem(entry, type, personalRating) {
     year: String(entry.year || ''),
     overview: entry.overview || '',
     personalRating: personalRating || 0,
+    ...extra,
   }
+}
+
+/** 已看剧集的追剧进度：watched/shows 返回逐季集数列表 + show.aired_episodes */
+function progressOf(item) {
+  if (!Array.isArray(item.seasons)) return {}
+  let watched = 0
+  for (const s of item.seasons) watched += Array.isArray(s.episodes) ? s.episodes.length : 0
+  const out = { watchedEps: watched, airedEps: Number(item.show?.aired_episodes || 0) }
+  if (item.last_watched_at) out.lastWatchedAt = item.last_watched_at
+  return watched > 0 ? out : {}
 }
 
 /**
@@ -213,6 +224,12 @@ async function runSync() {
         result.rated++
       }
       if (!existing.cover && mapped.cover) patch.cover = mapped.cover
+      /* 追剧进度：仅 Trakt 维护的字段，有变化才写 */
+      if (mapped.watchedEps !== undefined && (existing.watchedEps !== mapped.watchedEps || existing.airedEps !== mapped.airedEps)) {
+        patch.watchedEps = mapped.watchedEps
+        patch.airedEps = mapped.airedEps
+        if (mapped.lastWatchedAt) patch.lastWatchedAt = mapped.lastWatchedAt
+      }
       if (Object.keys(patch).length) movies().updateOne(existing.id, patch)
       result.skipped++
       return
@@ -223,7 +240,7 @@ async function runSync() {
   for (const item of wlMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0), 'want')
   for (const item of wlShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0), 'want')
   for (const item of wdMovies) stage(mapTraktItem(item.movie || item, 'movie', ratingByTmdb.get(item.movie?.ids?.tmdb) || 0), 'done')
-  for (const item of wdShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0), 'done')
+  for (const item of wdShows) stage(mapTraktItem(item.show || item, 'tv', ratingByTmdb.get(item.show?.ids?.tmdb) || 0, progressOf(item)), 'done')
 
   /* 第二遍：新增条目统一中文反查后入库 */
   await enrichByTmdb(fresh)

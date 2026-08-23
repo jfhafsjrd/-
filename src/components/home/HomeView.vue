@@ -20,6 +20,7 @@ const gameStats = ref(null)
 const movies = ref([])
 const todos = ref([])
 const todayEvents = ref([])
+const traktEps = ref([])
 const today = ymd()
 
 /* ---------- 加载 ---------- */
@@ -41,6 +42,14 @@ async function loadAll() {
   try {
     const to = ymd(new Date(Date.now() + 3 * 86400000))
     todayEvents.value = await api.events.list({ from: today, to })
+  } catch {
+    /* 静默 */
+  }
+
+  // Trakt 追剧更新（未授权/未配置时静默隐藏卡片）
+  try {
+    const r = await api.trakt.calendar(today, 7)
+    traktEps.value = (r.episodes || []).slice(0, 6)
   } catch {
     /* 静默 */
   }
@@ -170,8 +179,8 @@ async function toggleTodo(t) {
       </div>
     </div>
 
-    <!-- ============ 中排：今日待办 + 近期日程 ============ -->
-    <div class="mid-grid">
+    <!-- ============ 中排：今日待办 + 近期日程 + 追剧更新 ============ -->
+    <div class="mid-grid" :class="{ 'with-trakt': traktEps.length }">
       <section class="panel glass-card">
         <header class="panel-head">
           <h2>📋 今日待办</h2>
@@ -209,6 +218,22 @@ async function toggleTodo(t) {
           <span>🛋️</span>
           <p>近期没有安排</p>
         </div>
+      </section>
+
+      <section v-if="traktEps.length" class="panel glass-card">
+        <header class="panel-head">
+          <h2>📺 追剧更新</h2>
+          <RouterLink to="/calendar" class="panel-more">日历 →</RouterLink>
+        </header>
+        <ul class="ev-list">
+          <li v-for="e in traktEps" :key="e.id" class="ev-item">
+            <span class="ev-dot trakt"></span>
+            <span class="ev-date mono">{{ friendlyDate(e.date) }}</span>
+            <span class="ev-time mono" v-if="e.time">{{ e.time }}</span>
+            <span class="ev-title">{{ e.title }}</span>
+          </li>
+        </ul>
+        <p class="panel-note">来自 Trakt · 追的剧 7 天内的更新</p>
       </section>
     </div>
 
@@ -426,6 +451,19 @@ async function toggleTodo(t) {
     grid-template-columns: 1fr;
   }
 }
+.mid-grid.with-trakt {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+@media (max-width: 1100px) {
+  .mid-grid.with-trakt {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 900px) {
+  .mid-grid.with-trakt {
+    grid-template-columns: 1fr;
+  }
+}
 .panel {
   padding: 17px 20px;
 }
@@ -532,6 +570,16 @@ async function toggleTodo(t) {
 .ev-dot.manual {
   background: #34d399;
   box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+}
+.ev-dot.trakt {
+  background: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+}
+.panel-note {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  text-align: center;
 }
 .ev-date {
   font-size: 0.74rem;

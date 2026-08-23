@@ -650,6 +650,10 @@ async function doTraktSync() {
                   <span class="r-sep">|</span>
                   <span class="r-mine">个人 <b>{{ m.personalRating ? m.personalRating.toFixed(1) : '—' }}</b></span>
                 </p>
+                <div v-if="m.airedEps > 0" class="mv-progress" :class="{ over: (m.watchedEps || 0) >= m.airedEps }">
+                  <span class="mv-eps mono">📺 {{ m.watchedEps || 0 }}/{{ m.airedEps }} 集</span>
+                  <span class="mv-bar"><i :style="{ width: Math.min(100, Math.round(((m.watchedEps || 0) / m.airedEps) * 100)) + '%' }"></i></span>
+                </div>
                 <p v-if="m.comment" class="mv-comment">“{{ m.comment }}”</p>
                 <p v-if="m.reservationTime" class="mv-reserve">
                   📅 预约 {{ m.reservationTime.replace('T', ' ') }}
@@ -1105,6 +1109,37 @@ kbd {
 }
 .r-sep {
   opacity: 0.4;
+}
+/* 追剧进度：Trakt 同步的剧集卡片显示 已看/已播 集数 + 微进度条 */
+.mv-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+.mv-eps {
+  white-space: nowrap;
+}
+.mv-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 4px;
+  background: rgba(251, 191, 36, 0.16);
+  overflow: hidden;
+}
+.mv-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  transition: width 0.6s ease;
+}
+.mv-progress.over .mv-bar {
+  background: rgba(52, 211, 153, 0.14);
+}
+.mv-progress.over .mv-bar i {
+  background: linear-gradient(90deg, #10b981, #34d399);
 }
 .mv-comment {
   font-size: 0.8rem;
