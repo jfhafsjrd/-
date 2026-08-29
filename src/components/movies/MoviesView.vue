@@ -823,18 +823,24 @@ async function doTraktSync() {
   align-items: flex-end;
   gap: 4px;
   min-width: 180px;
-  height: 52px;
+  height: 68px;
+  padding-top: 16px; /* 给柱顶数字留位，满高柱不顶出卡片 */
 }
 .ss-bar {
   flex: 1;
   position: relative;
+  max-height: calc(100% - 16px);
   border-radius: 3px 3px 1px 1px;
   background: linear-gradient(180deg, #a855f7, #6366f1);
   opacity: 0.85;
 }
 .ss-bar.zero {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.05);
   opacity: 1;
+  border-radius: 99px;
+}
+.ss-bar.zero em {
+  display: none;
 }
 .ss-bar em {
   position: absolute;

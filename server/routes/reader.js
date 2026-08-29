@@ -339,9 +339,11 @@ router.get('/:id/cover', (req, res) => {
   if (book.type === 'epub') {
     const file = path.join(BOOK_DIR, String(book.id), 'cover.img')
     if (!fs.existsSync(file)) return res.status(404).end()
-    res.set('Cache-Control', 'public, max-age=86400')
-    res.set('Content-Type', book.coverMime || 'image/jpeg')
-    return res.sendFile(path.join(String(book.id), 'cover.img'), root)
+    /* sendFile 会按扩展名覆盖 Content-Type，这里显式传 headers 压回图片类型 */
+    return res.sendFile(path.join(String(book.id), 'cover.img'), {
+      root: BOOK_DIR,
+      headers: { 'Content-Type': book.coverMime || 'image/jpeg', 'Cache-Control': 'public, max-age=86400' },
+    })
   }
   if (book.type !== 'cbz') return res.status(404).end()
   res.set('Cache-Control', 'public, max-age=86400')

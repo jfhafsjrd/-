@@ -147,7 +147,8 @@ const sorted = computed(() => {
     </StateShell>
 
     <!-- 沉浸阅读器 -->
-    <TxtReader v-if="reading?.type === 'txt'" :book="reading" @close="reading = null; load()" />
+    <!-- 沉浸阅读器（EPUB 与 TXT 共用分栏阅读器） -->
+    <TxtReader v-if="reading?.type === 'txt' || reading?.type === 'epub'" :book="reading" @close="reading = null; load()" />
     <ComicReader v-else-if="reading?.type === 'cbz'" :book="reading" @close="reading = null; load()" />
   </div>
 </template>
@@ -159,18 +160,18 @@ const sorted = computed(() => {
 .ib-track i { display: block; height: 100%; background: var(--accent-grad); transition: width 0.2s; }
 
 .shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
-.bk-card { padding: 12px; cursor: pointer; position: relative; }
-.bk-cover { aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: var(--bg-2); border: 1px solid var(--border); position: relative; }
+.bk-card { padding: 12px; cursor: pointer; position: relative; display: flex; flex-direction: column; }
+.bk-cover { aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: var(--bg-2); border: 1px solid var(--border); position: relative; flex-shrink: 0; }
 .bk-cover img { width: 100%; height: 100%; object-fit: cover; }
 .bk-spine { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 14px;
   background: linear-gradient(160deg, rgba(124, 58, 237, 0.25), rgba(99, 102, 241, 0.12)); text-align: center; }
 .bk-spine .bk-icon { font-size: 2rem; }
-.bk-spine strong { font-size: 0.85rem; color: var(--text-1); line-height: 1.5; }
+.bk-spine strong { font-size: 0.85rem; color: var(--text-1); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .bk-type { position: absolute; top: 8px; right: 8px; font-size: 0.64rem; padding: 2px 8px; border-radius: 99px;
   background: rgba(10, 11, 16, 0.6); color: #fff; backdrop-filter: blur(4px); }
-.bk-body { padding: 10px 2px 2px; display: grid; gap: 5px; }
-.bk-title { font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bk-meta { font-size: 0.7rem; color: var(--text-3); }
+.bk-body { padding: 10px 2px 2px; display: grid; gap: 5px; align-content: start; flex: 1; min-height: 0; }
+.bk-title { font-size: 0.92rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+.bk-meta { font-size: 0.7rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bk-progress { display: flex; align-items: center; gap: 8px; }
 .bk-bar { flex: 1; height: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .bk-bar i { display: block; height: 100%; background: linear-gradient(90deg, #a855f7, #6366f1); }
