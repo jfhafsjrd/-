@@ -8,13 +8,14 @@
   -webkit-backdrop-filter: blur(14px);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
   transition: border-color var(--dur), background var(--dur), transform var(--dur), box-shadow var(--dur);
 }
 .glass-card.hoverable:hover {
   background: var(--card-hover);
   border-color: var(--border-strong);
   transform: translateY(-3px);
-  box-shadow: 0 14px 44px -14px rgba(0, 0, 0, 0.65), 0 0 28px -8px var(--accent-glow);
+  box-shadow: var(--shadow-lift);
 }
 
 /* 流光边框卡片（荣誉墙 / 重点卡）：conic-gradient 旋转描边 */

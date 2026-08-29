@@ -45,6 +45,7 @@ const modules = {
   links: (await import('./routes/links.js')).default,
   github: (await import('./routes/github.js')).default,
   reader: (await import('./routes/reader.js')).default,
+  stats: (await import('./routes/stats.js')).default,
 }
 for (const [name, router] of Object.entries(modules)) {
   app.use(`/api/${name}`, router)
@@ -78,6 +79,32 @@ app.get('/api/proxy/image', async (req, res) => {
     res.send(buf)
   } catch (err) {
     res.status(502).json({ error: err.message })
+  }
+})
+
+/* ---- 导航书签真图标：抓目标站 favicon（内存缓存 7 天），失败 404 由前端回退 emoji ---- */
+const FAVICON_CACHE = new Map()
+app.get('/api/proxy/favicon', async (req, res) => {
+  try {
+    const domain = String(req.query.d || '').replace(/^https?:\/\//, '').split('/')[0].toLowerCase()
+    if (!/^[\w.-]+\.[a-z]{2,}$/i.test(domain)) return res.status(400).end()
+    const hit = FAVICON_CACHE.get(domain)
+    if (hit && Date.now() - hit.at < 7 * 86400_000) {
+      res.set('Content-Type', hit.type)
+      res.set('Cache-Control', 'public, max-age=604800')
+      return res.send(hit.buf)
+    }
+    const upstream = await smartFetch(`https://${domain}/favicon.ico`, { timeout: 6000 })
+    if (!upstream.ok) return res.status(404).end()
+    const buf = Buffer.from(await upstream.arrayBuffer())
+    if (!buf.length || buf.length > 300_000) return res.status(404).end()
+    const type = upstream.headers.get('content-type') || 'image/x-icon'
+    FAVICON_CACHE.set(domain, { buf, type, at: Date.now() })
+    res.set('Content-Type', type)
+    res.set('Cache-Control', 'public, max-age=604800')
+    res.send(buf)
+  } catch {
+    res.status(404).end()
   }
 })
 

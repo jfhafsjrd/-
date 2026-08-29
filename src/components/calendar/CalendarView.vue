@@ -218,6 +218,16 @@ function openDay(date) {
 
 const dayEvents = computed(() => eventsByDate.value[selectedDate.value] || [])
 
+/* ---------- 今日聚焦：今天的事项按时间排序，已过时间灰化 ---------- */
+const nowHM = computed(() => new Date().toTimeString().slice(0, 5))
+const todayFocus = computed(() => {
+  const evs = (eventsByDate.value[today] || []).slice().sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
+  const todoItems = todos.value
+    .filter((t) => !t.done && t.dueDate && t.dueDate.slice(0, 10) === today)
+    .map((t) => ({ id: `ft-${t.id}`, title: t.title, time: (t.dueDate || '').slice(11, 16), source: 'todo' }))
+  return { items: [...todoItems, ...evs].slice(0, 8), now: nowHM.value }
+})
+
 async function addEvent() {
   const f = eventForm.value
   if (!f.title.trim()) {
@@ -261,6 +271,23 @@ async function removeEvent(ev) {
         <button class="pill-tab" :class="{ active: view === 'week' }" @click="view = 'week'">周视图</button>
       </div>
     </div>
+
+    <!-- ============ 今日聚焦条 ============ -->
+    <section v-if="todayFocus.items.length" class="focus-bar glass-card">
+      <span class="fb-date mono">{{ today.slice(5) }}</span>
+      <span class="fb-label">今天</span>
+      <div class="fb-items">
+        <span
+          v-for="ev in todayFocus.items"
+          :key="ev.id"
+          class="fb-item"
+          :class="[SOURCE_META[ev.source]?.cls, { past: ev.time && ev.time < new Date().toTimeString().slice(0, 5) }]"
+        >
+          <i v-if="ev.time" class="mono">{{ ev.time }}</i>
+          {{ ev.title }}
+        </span>
+      </div>
+    </section>
 
     <div class="layout">
       <!-- ============ 日历 ============ -->
@@ -902,5 +929,65 @@ async function removeEvent(ev) {
 }
 .dm-time-input {
   width: 108px;
+}
+/* 今日聚焦条 */
+.focus-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.fb-date {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--t-accent);
+}
+.fb-label {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 99px;
+  padding: 2px 10px;
+  flex-shrink: 0;
+}
+.fb-items {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.fb-item {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid transparent;
+  white-space: nowrap;
+}
+.fb-item i {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  font-style: normal;
+}
+.fb-item.past {
+  opacity: 0.42;
+  text-decoration: line-through;
+}
+.fb-item.todo {
+  border-left-color: #a855f7;
+}
+.fb-item.movie {
+  border-left-color: #38bdf8;
+}
+.fb-item.manual {
+  border-left-color: #34d399;
+}
+.fb-item.trakt {
+  border-left-color: #fbbf24;
 }
 </style>

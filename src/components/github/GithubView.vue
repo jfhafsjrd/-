@@ -11,6 +11,7 @@ import IconSvg from '@/components/common/IconSvg.vue'
 import Modal from '@/components/common/Modal.vue'
 import DiscoverPanel from './DiscoverPanel.vue'
 import GalaxyView from './GalaxyView.vue'
+import HeatmapGrid from './HeatmapGrid.vue'
 
 const toast = useToast()
 
@@ -138,6 +139,7 @@ onMounted(() => setTimeout(moveSlider, 80))
 
 <template>
   <div>
+    <HeatmapGrid />
     <div class="page-head">
       <div>
         <h1 class="page-title">🐙 GitHub 藏书阁</h1>

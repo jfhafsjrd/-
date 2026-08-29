@@ -34,6 +34,15 @@ const addShow = ref(false)
 const addForm = ref({ name: '', platform: 'pc', status: 'want' })
 const addSaving = ref(false)
 
+/* ---------- 最近在玩：近两周有游玩记录的前 2 款（Steam 展示柜风） ---------- */
+const recentGames = computed(() =>
+  games.value
+    .filter((g) => (g.playtime2weeks || 0) > 0)
+    .sort((a, b) => (b.playtime2weeks || 0) - (a.playtime2weeks || 0))
+    .slice(0, 2),
+)
+const headerImg = (g) => (g.steamAppId ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.steamAppId}/header.jpg` : '')
+
 /* ---------- 加载 ---------- */
 async function load() {
   loading.value = true
@@ -175,6 +184,27 @@ const syncPct = computed(() =>
           <IconSvg name="refresh" :size="15" />
           {{ syncState?.running ? `同步中 ${syncPct}%` : '同步 Steam' }}
         </button>
+      </div>
+    </div>
+
+    <!-- 最近在玩（展示柜：header 大图压暗 + 胶囊图 + 近两周时长） -->
+    <div v-if="recentGames.length" class="recent-grid" :class="{ single: recentGames.length === 1 }">
+      <div v-for="g in recentGames" :key="g.id" class="recent-card glass-card" @click="openAch(g)">
+        <img
+          v-if="headerImg(g)"
+          class="rc-bg"
+          :src="steamCover(headerImg(g))"
+          alt=""
+          loading="lazy"
+          @error="$event.target.style.display = 'none'"
+        />
+        <div class="rc-shade"></div>
+        <img v-if="g.cover" :src="steamCover(g.cover)" :alt="g.name" class="rc-capsule" loading="lazy" />
+        <div class="rc-info">
+          <span class="rc-tag">🕹️ 最近在玩</span>
+          <strong class="rc-name">{{ g.name }}</strong>
+          <span class="rc-meta mono">近两周 {{ hours(g.playtime2weeks) }} · 总时长 {{ hours(g.playtime) }}</span>
+        </div>
       </div>
     </div>
 
@@ -574,6 +604,81 @@ const syncPct = computed(() =>
   }
   .search-box {
     width: 100%;
+  }
+}
+/* 最近在玩展示柜 */
+.recent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.recent-grid.single {
+  grid-template-columns: 1fr;
+}
+.recent-card {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  min-height: 128px;
+  padding: 16px 18px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.rc-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.05);
+  transition: transform 0.5s var(--ease);
+}
+.recent-card:hover .rc-bg {
+  transform: scale(1.05);
+}
+.rc-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(8, 9, 14, 0.88) 22%, rgba(8, 9, 14, 0.45) 60%, rgba(8, 9, 14, 0.25));
+}
+.recent-card > :not(.rc-bg):not(.rc-shade) {
+  position: relative;
+  z-index: 1;
+}
+.rc-capsule {
+  width: 92px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.rc-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #fff;
+}
+.rc-tag {
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  color: #d8b4fe;
+}
+.rc-name {
+  font-size: 1.06rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.rc-meta {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+@media (max-width: 760px) {
+  .recent-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -17,6 +17,8 @@ const loading = ref(true)
 const error = ref('')
 const keyword = ref('')
 const checking = ref(false)
+/* 图标抓取失败的站点 → 回退 emoji */
+const favFail = ref(new Set())
 
 const editShow = ref(false)
 const editForm = ref(null) // { id?, title, url, icon, category, note }
@@ -113,7 +115,8 @@ async function doDelete() {
 const favicon = (url) => {
   try {
     const u = new URL(url)
-    return `${u.origin}/favicon.ico`
+    /* 走后端代理抓站图标（服务器海外直连 + 7 天缓存），失败由 img onerror 回退 emoji */
+    return `/api/proxy/favicon?d=${encodeURIComponent(u.host)}`
   } catch {
     return ''
   }
@@ -159,10 +162,11 @@ const favicon = (url) => {
           >
             <span class="lc-icon" :class="{ dead: l.alive === 'down' }">
               <img
-                v-if="(l.icon && l.icon.startsWith('http')) || (!l.icon && favicon(l.url))"
+                v-if="!favFail.has(l.id) && ((l.icon && l.icon.startsWith('http')) || (!l.icon && favicon(l.url)))"
                 :src="l.icon && l.icon.startsWith('http') ? l.icon : favicon(l.url)"
                 alt=""
-                @error="$event.target.style.display = 'none'"
+                loading="lazy"
+                @error="favFail.add(l.id)"
               />
               <template v-else>{{ l.icon || '🔗' }}</template>
             </span>
@@ -302,12 +306,13 @@ const favicon = (url) => {
 .lc-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-  font-size: 20px;
-  background: rgba(168, 85, 247, 0.1);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 22px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.06), rgba(168, 85, 247, 0.08));
   border: 1px solid rgba(168, 85, 247, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
   overflow: hidden;
 }

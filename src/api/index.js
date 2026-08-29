@@ -126,6 +126,11 @@ export const api = {
   /* 天气 */
   weather: (city) => http.get('/weather', { params: city ? { city } : {} }),
 
+  /* 生活统计 */
+  stats: {
+    heatmap: () => http.get('/stats/heatmap'),
+  },
+
   /* 阅读 */
   reader: {
     list: () => http.get('/reader'),

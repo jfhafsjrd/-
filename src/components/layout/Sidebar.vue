@@ -162,21 +162,23 @@ const emitPalette = () => window.dispatchEvent(new CustomEvent('lifeos:palette')
 }
 .nav-item.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(168, 85, 247, 0.18), rgba(99, 102, 241, 0.08));
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.08));
+  box-shadow: var(--glow-soft);
 }
 .nav-item.active::before {
   content: '';
   position: absolute;
   left: -14px;
-  top: 20%;
-  bottom: 20%;
+  top: 14%;
+  bottom: 14%;
   width: 3px;
   border-radius: 99px;
   background: var(--accent-grad);
-  box-shadow: 0 0 12px var(--accent-glow);
+  box-shadow: 0 0 14px var(--accent-glow);
 }
 .nav-item.active .nav-icon {
-  filter: drop-shadow(0 0 8px var(--accent-glow));
+  filter: drop-shadow(0 0 10px var(--accent-glow));
+  transform: scale(1.12);
 }
 .nav-item.active .nav-desc {
   max-height: 20px;

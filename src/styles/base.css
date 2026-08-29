@@ -34,6 +34,27 @@ body::before {
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
 }
 
+/* 两团缓慢漂移的光斑（仅 transform，GPU 友好；设计系统 2.0） */
+body::after {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(560px 380px at 24% 30%, rgba(168, 85, 247, 0.09), transparent 70%),
+    radial-gradient(640px 420px at 76% 70%, rgba(56, 189, 248, 0.06), transparent 70%);
+  animation: bg-drift 26s ease-in-out infinite alternate;
+}
+@keyframes bg-drift {
+  from {
+    transform: translate3d(-2.5%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2.5%, 2.5%, 0) scale(1.06);
+  }
+}
+
 img {
   display: block;
   max-width: 100%;

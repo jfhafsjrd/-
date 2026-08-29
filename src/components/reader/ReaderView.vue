@@ -71,6 +71,15 @@ const fmtSize = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.ma
 /* 封面加载失败的书（如无封面的 EPUB）回退书脊样式 */
 const coverFail = ref(new Set())
 
+/* ---------- 在读中：最近读过且未读完的书 ---------- */
+const inProgress = computed(() => {
+  const list = books.value.filter((b) => b.lastReadAt && (b.pct || 0) < 99)
+  if (!list.length) return null
+  return list.sort((a, b) => (b.lastReadAt || '').localeCompare(a.lastReadAt || ''))[0]
+})
+const IP_R = 26
+const IP_CIRC = 2 * Math.PI * IP_R
+
 /* ---------- 排序 ---------- */
 const sortKey = ref('recent')
 const SORTS = [
@@ -110,6 +119,36 @@ const sorted = computed(() => {
     <div v-if="importing" class="import-bar glass-card">
       <div class="ib-track"><i :style="{ width: importPct + '%' }"></i></div>
     </div>
+
+    <!-- ============ 在读中（一眼续读） ============ -->
+    <section v-if="inProgress && !reading" class="ip-card glass-card" @click="open(inProgress)">
+      <img class="ip-cover" v-if="inProgress.type !== 'txt' && !coverFail.has(inProgress.id)" :src="api.reader.coverUrl(inProgress.id)" :alt="inProgress.title" @error="coverFail.add(inProgress.id)" />
+      <div v-else class="ip-cover ip-spine">📖</div>
+      <div class="ip-info">
+        <span class="ip-tag">📖 在读中</span>
+        <h3 class="ip-title">{{ inProgress.title }}</h3>
+        <p class="ip-meta mono">
+          {{ inProgress.type === 'txt' ? `${inProgress.chapterCount} 章` : inProgress.type === 'epub' ? `${inProgress.chapterCount} 节` : `${inProgress.pages} 页` }}
+          · {{ Math.round(inProgress.pct || 0) }}%
+        </p>
+      </div>
+      <svg class="ip-ring" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+        <circle cx="32" cy="32" :r="IP_R" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6" />
+        <circle
+          cx="32" cy="32" :r="IP_R" fill="none" stroke="url(#ip-grad)" stroke-width="6"
+          stroke-linecap="round" :stroke-dasharray="IP_CIRC" :stroke-dashoffset="IP_CIRC * (1 - (inProgress.pct || 0) / 100)"
+          transform="rotate(-90 32 32)"
+        />
+        <defs>
+          <linearGradient id="ip-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#a855f7" />
+            <stop offset="100%" stop-color="#6366f1" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="ip-pct mono">{{ Math.round(inProgress.pct || 0) }}%</span>
+      <button class="btn primary ip-go">继续阅读 →</button>
+    </section>
 
     <StateShell :loading="loading" :error="error" :empty="!sorted.length"
       empty-emoji="📚" empty-text="书房还是空的" empty-sub="导入 TXT 小说或 CBZ/ZIP 漫画开始阅读"
@@ -158,6 +197,30 @@ const sorted = computed(() => {
 .import-bar { padding: 12px 16px; }
 .ib-track { height: 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .ib-track i { display: block; height: 100%; background: var(--accent-grad); transition: width 0.2s; }
+
+/* 在读中主卡 */
+.ip-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  cursor: pointer;
+  background:
+    radial-gradient(380px 160px at 88% 120%, rgba(168, 85, 247, 0.16), transparent 70%),
+    var(--card);
+}
+.ip-cover { width: 64px; aspect-ratio: 3 / 4; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+.ip-spine { display: grid; place-items: center; font-size: 1.6rem; background: linear-gradient(160deg, rgba(124, 58, 237, 0.3), rgba(99, 102, 241, 0.14)); }
+.ip-info { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.ip-tag { font-size: 0.68rem; color: var(--t-accent); letter-spacing: 0.14em; }
+.ip-title { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-meta { font-size: 0.74rem; color: var(--text-3); }
+.ip-ring { flex-shrink: 0; }
+.ip-pct { flex-shrink: 0; font-size: 0.9rem; color: var(--text-2); width: 44px; text-align: right; }
+.ip-go { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .ip-ring, .ip-pct { display: none; }
+}
 
 .shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
 .bk-card { padding: 12px; cursor: pointer; position: relative; display: flex; flex-direction: column; }

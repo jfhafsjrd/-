@@ -23,6 +23,30 @@ const todayEvents = ref([])
 const traktEps = ref([])
 const today = ymd()
 
+/* ---------- 每日一句（本地语料按日期轮换）+ 今日进度 ---------- */
+const QUOTES = [
+  { text: '凡是过往，皆为序章。', author: '莎士比亚' },
+  { text: '种一棵树最好的时间是十年前，其次是现在。', author: '非洲谚语' },
+  { text: '慢慢来，比较快。', author: '生活禅' },
+  { text: '你不必厉害了才开始，但开始了才会厉害。', author: '成长论' },
+  { text: '知之者不如好之者，好之者不如乐之者。', author: '孔子' },
+  { text: '把日子过成值得备份的样子。', author: 'Life OS' },
+  { text: '万物皆有裂痕，那是光照进来的地方。', author: '莱昂纳德·科恩' },
+  { text: '今天不想跑，所以才去跑，这才是长跑者的思维。', author: '村上春树' },
+  { text: '山不来就我，我便去就山。', author: '穆罕默德' },
+  { text: '所谓热爱，就是坚持到世界都觉得你无聊。', author: '探索者手册' },
+]
+const quote = computed(() => QUOTES[Number(today.replace(/-/g, '')) % QUOTES.length])
+
+const now = ref(new Date())
+setInterval(() => (now.value = new Date()), 60_000)
+const dayPct = computed(() => {
+  const d = now.value
+  return Math.round(((d.getHours() * 60 + d.getMinutes()) / 1440) * 100)
+})
+const R = 34
+const CIRC = 2 * Math.PI * R
+
 /* ---------- 加载 ---------- */
 async function loadWeather() {
   try {
@@ -87,14 +111,35 @@ async function toggleTodo(t) {
 
 <template>
   <div class="home">
-    <!-- ============ 问候区 ============ -->
-    <header class="hero">
-      <div>
+    <!-- ============ 问候主卡（Bento 主角） ============ -->
+    <header class="hero glass-card">
+      <div class="hero-left">
         <h1 class="hero-title">{{ greeting() }}，探索者</h1>
         <p class="hero-sub">
           今天是 {{ new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }) }}
           · 待看 <b>{{ wantCount }}</b> 部 · 待办 <b>{{ todayTodos.length }}</b> 件
         </p>
+        <p class="hero-quote">「{{ quote.text }}」<span class="hero-quote-by">—— {{ quote.author }}</span></p>
+      </div>
+      <div class="hero-ring" title="今天已过的时间进度">
+        <svg viewBox="0 0 84 84" width="96" height="96" aria-hidden="true">
+          <circle cx="42" cy="42" :r="R" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="7" />
+          <circle
+            cx="42" cy="42" :r="R" fill="none" stroke="url(#day-grad)" stroke-width="7"
+            stroke-linecap="round" :stroke-dasharray="CIRC"
+            :stroke-dashoffset="CIRC * (1 - dayPct / 100)" transform="rotate(-90 42 42)"
+          />
+          <defs>
+            <linearGradient id="day-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#c084fc" />
+              <stop offset="100%" stop-color="#818cf8" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="hero-ring-txt">
+          <b class="mono">{{ dayPct }}%</b>
+          <span>今日进度</span>
+        </div>
       </div>
     </header>
 
@@ -261,9 +306,20 @@ async function toggleTodo(t) {
   gap: 18px;
 }
 
-/* 问候 */
+/* 问候主卡（Bento 主角：全页唯一彩色卡，右下角柔光） */
 .hero {
-  padding: 6px 2px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 26px 30px;
+  background:
+    radial-gradient(420px 200px at 92% 110%, rgba(168, 85, 247, 0.22), transparent 70%),
+    linear-gradient(120deg, rgba(124, 58, 237, 0.14), rgba(56, 189, 248, 0.06) 60%, var(--card) 90%);
+  overflow: hidden;
+}
+.hero-left {
+  min-width: 0;
 }
 .hero-title {
   font-size: 1.9rem;
@@ -275,13 +331,47 @@ async function toggleTodo(t) {
   color: transparent;
 }
 .hero-sub {
-  margin-top: 5px;
+  margin-top: 6px;
   font-size: 0.88rem;
   color: var(--text-2);
 }
 .hero-sub b {
   color: var(--t-accent);
   font-family: var(--mono);
+}
+.hero-quote {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: var(--text-1);
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+}
+.hero-quote-by {
+  margin-left: 10px;
+  font-size: 0.76rem;
+  color: var(--text-3);
+}
+.hero-ring {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 0 18px rgba(124, 58, 237, 0.3));
+}
+.hero-ring-txt {
+  position: absolute;
+  text-align: center;
+  display: grid;
+  gap: 1px;
+}
+.hero-ring-txt b {
+  font-size: 1.05rem;
+  color: var(--text-1);
+}
+.hero-ring-txt span {
+  font-size: 0.62rem;
+  color: var(--text-3);
+  letter-spacing: 0.12em;
 }
 
 /* 顶排 */
