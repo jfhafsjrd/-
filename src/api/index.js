@@ -20,6 +20,7 @@ http.interceptors.response.use(
     if (err.response?.status === 401) window.dispatchEvent(new CustomEvent('lifeos:401'))
     const msg =
       err.response?.data?.error ||
+      (err.response?.status === 413 ? '文件太大，被服务器拒绝（超过上传上限）' : '') ||
       (err.code === 'ECONNABORTED' ? '请求超时，请稍后重试' : '') ||
       err.message ||
       '网络异常'

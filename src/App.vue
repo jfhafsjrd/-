@@ -69,11 +69,10 @@ onMounted(async () => {
 <style scoped>
 .main {
   margin-left: var(--sidebar-w);
-  padding: 30px 34px 60px;
+  padding: 30px clamp(20px, 3vw, 48px) 60px;
   min-height: 100vh;
   position: relative;
   z-index: var(--z-content);
-  max-width: 1360px;
 }
 
 @media (max-width: 768px) {

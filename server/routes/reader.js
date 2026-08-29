@@ -84,7 +84,7 @@ const xmlAttr = (xml, name) => {
  * 路线：container.xml → OPF → manifest/spine → 逐文档提纯文本；
  * 标题优先取 EPUB3 nav / EPUB2 NCX 目录，缺失回退文档内标题。
  */
-function importEpub(files) {
+export function importEpub(files) {
   const fileAt = (p) => {
     if (files[p] !== undefined) return files[p]
     const lower = Object.keys(files).find((k) => k.toLowerCase() === p.toLowerCase())

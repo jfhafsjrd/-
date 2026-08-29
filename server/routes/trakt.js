@@ -243,8 +243,8 @@ async function runSync() {
   /* 真实观看日期：Trakt 的 last_watched_at，替代"同步那一刻" */
   const watchedAtOf = (item) => item?.last_watched_at || ''
 
-  /* 第一遍：全部条目映射 + 分流「已存在（只补评分）」和「新增（待中文反查）」 */
-  const result = { wantAdded: 0, doneAdded: 0, skipped: 0, rated: 0, enriched: 0 }
+  /* 第一遍：全部条目映射 + 分流「已存在（补缺/升级）」和「新增（待中文反查）」 */
+  const result = { wantAdded: 0, doneAdded: 0, skipped: 0, rated: 0, updated: 0, enriched: 0 }
   const fresh = []
 
   const stage = (mapped, status) => {
@@ -252,13 +252,18 @@ async function runSync() {
     const existing = mapped.tmdbId ? movies().findOne({ tmdbId: mapped.tmdbId }) : movies().findOne({ title: { $like: mapped.title } })
     if (existing) {
       const patch = {}
+      /* 状态升级：Trakt 已看但本地还是待看 → 翻已看（单向升级，不降级） */
+      if (status === 'done' && existing.status !== 'done') {
+        patch.status = 'done'
+        patch.watchedAt = mapped.traktWatchedAt || new Date().toISOString()
+        result.updated++
+      }
       if (!existing.personalRating && mapped.personalRating) {
         patch.personalRating = mapped.personalRating
         result.rated++
       }
       if (!existing.cover && mapped.cover) patch.cover = mapped.cover
-      if (mapped.traktWatchedAt && !existing.watchedAt) patch.watchedAt = mapped.traktWatchedAt
-      /* 追剧进度：仅 Trakt 维护的字段，有变化才写 */
+      if (mapped.traktWatchedAt && !existing.watchedAt && existing.status === 'done') patch.watchedAt = mapped.traktWatchedAt
       if (mapped.watchedEps !== undefined && (existing.watchedEps !== mapped.watchedEps || existing.airedEps !== mapped.airedEps)) {
         patch.watchedEps = mapped.watchedEps
         patch.airedEps = mapped.airedEps
@@ -301,7 +306,7 @@ export async function traktAutoSync() {
   if (!rec || !CLIENT_ID) return false
   try {
     const r = await runSync()
-    console.log(`[cron] Trakt 自动同步：待看 +${r.wantAdded} · 已看 +${r.doneAdded} · 补评 ${r.rated} · 跳过 ${r.skipped}`)
+    console.log(`[cron] Trakt 自动同步：待看 +${r.wantAdded} · 已看 +${r.doneAdded} · 状态升级 ${r.updated} · 补评 ${r.rated} · 跳过 ${r.skipped}`)
     return true
   } catch (err) {
     console.warn('[cron] Trakt 自动同步失败:', err.message)
