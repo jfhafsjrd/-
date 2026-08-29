@@ -4,7 +4,6 @@ import Sidebar from '@/components/layout/Sidebar.vue'
 import MobileHeader from '@/components/layout/MobileHeader.vue'
 import LowPolyBg from '@/components/layout/LowPolyBg.vue'
 import ToastHost from '@/components/common/ToastHost.vue'
-import AuthGate from '@/components/common/AuthGate.vue'
 import CommandPalette from '@/components/common/CommandPalette.vue'
 import { api } from '@/api'
 
@@ -23,19 +22,21 @@ onMounted(() => {
   window.addEventListener('lifeos:palette', () => (paletteShow.value = true))
 })
 
-/* 访问码登录门：启动时查询 + 任意接口 401（令牌失效/被改码）时重新落下 */
-const needAuth = ref(false)
+/* 站主专属链接（/?auth=口令）自动解锁写权限并从地址栏抹去口令；访客只读浏览，无任何登录框 */
 onMounted(async () => {
-  try {
-    const s = await api.auth.status()
-    if (s.required && !s.authorized) needAuth.value = true
-  } catch {
-    /* 查询失败不打门，业务接口报错时由 401 事件兜底 */
+  const params = new URLSearchParams(location.search)
+  const key = params.get('auth')
+  if (key) {
+    try {
+      const r = await api.auth.login(key)
+      localStorage.setItem('lifeos_token', r.token)
+    } catch {
+      /* 无效链接：当作普通访客，不打扰 */
+    }
+    params.delete('auth')
+    const qs = params.toString()
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash)
   }
-})
-window.addEventListener('lifeos:401', () => {
-  localStorage.removeItem('lifeos_token')
-  needAuth.value = true
 })
 </script>
 
@@ -48,8 +49,6 @@ window.addEventListener('lifeos:401', () => {
       <div class="boot-text">Life OS 启动中</div>
     </div>
   </Transition>
-
-  <AuthGate v-if="needAuth" />
 
   <CommandPalette v-model="paletteShow" />
 
