@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.cc-reader { position: fixed; inset: 0; z-index: 150; background: #0b0c11; display: flex; flex-direction: column; }
+.cc-reader { position: fixed; inset: 0; z-index: 90; background: #0b0c11; display: flex; flex-direction: column; }
 
 /* 单页/双页画布 */
 .cc-main { flex: 1; position: relative; overflow: auto; display: grid; place-items: center; cursor: pointer; grid-auto-flow: column; }
