@@ -68,6 +68,9 @@ async function removeBook(book) {
 
 const fmtSize = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB')
 
+/* 封面加载失败的书（如无封面的 EPUB）回退书脊样式 */
+const coverFail = ref(new Set())
+
 /* ---------- 排序 ---------- */
 const sortKey = ref('recent')
 const SORTS = [
@@ -97,7 +100,7 @@ const sorted = computed(() => {
         <select v-model="sortKey" class="sort-select" aria-label="排序方式">
           <option v-for="s in SORTS" :key="s.key" :value="s.key">{{ s.label }}</option>
         </select>
-        <input ref="fileEl" type="file" accept=".txt,.cbz,.zip" hidden @change="onFile" />
+        <input ref="fileEl" type="file" accept=".txt,.epub,.cbz,.zip" hidden @change="onFile" />
         <button class="btn primary" :disabled="importing" @click="fileEl?.click()">
           {{ importing ? `导入中 ${importPct}%` : '📥 导入书籍' }}
         </button>
@@ -114,12 +117,18 @@ const sorted = computed(() => {
       <div class="shelf-grid">
         <article v-for="b in sorted" :key="b.id" class="bk-card glass-card hoverable" @click="open(b)">
           <div class="bk-cover" :class="b.type">
-            <img v-if="b.type === 'cbz'" :src="api.reader.coverUrl(b.id)" loading="lazy" :alt="b.title" />
+            <img
+              v-if="b.type !== 'txt' && !coverFail.has(b.id)"
+              :src="api.reader.coverUrl(b.id)"
+              loading="lazy"
+              :alt="b.title"
+              @error="coverFail.add(b.id)"
+            />
             <div v-else class="bk-spine">
               <span class="bk-icon">📕</span>
               <strong>{{ b.title.slice(0, 12) }}</strong>
             </div>
-            <span class="bk-type">{{ b.type === 'txt' ? '小说' : '漫画' }}</span>
+            <span class="bk-type">{{ b.type === 'cbz' ? '漫画' : '小说' }}</span>
           </div>
           <div class="bk-body">
             <h3 class="bk-title">{{ b.title }}</h3>
