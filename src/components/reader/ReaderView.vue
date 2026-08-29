@@ -68,7 +68,22 @@ async function removeBook(book) {
 
 const fmtSize = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB')
 
-const sorted = computed(() => [...books.value])
+/* ---------- 排序 ---------- */
+const sortKey = ref('recent')
+const SORTS = [
+  { key: 'recent', label: '最近阅读' },
+  { key: 'added', label: '最近添加' },
+  { key: 'progress', label: '阅读进度' },
+  { key: 'size', label: '体积' },
+]
+const sorted = computed(() => {
+  const list = [...books.value]
+  const k = sortKey.value
+  if (k === 'progress') return list.sort((a, b) => (b.pct || 0) - (a.pct || 0))
+  if (k === 'size') return list.sort((a, b) => (b.size || 0) - (a.size || 0))
+  if (k === 'added') return list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+  return list.sort((a, b) => (b.lastReadAt || b.createdAt || '').localeCompare(a.lastReadAt || a.createdAt || ''))
+})
 </script>
 
 <template>
@@ -79,6 +94,9 @@ const sorted = computed(() => [...books.value])
         <p class="page-sub">小说 · 漫画 · 沉浸阅读 · 进度自动记忆</p>
       </div>
       <div class="head-right">
+        <select v-model="sortKey" class="sort-select" aria-label="排序方式">
+          <option v-for="s in SORTS" :key="s.key" :value="s.key">{{ s.label }}</option>
+        </select>
         <input ref="fileEl" type="file" accept=".txt,.cbz,.zip" hidden @change="onFile" />
         <button class="btn primary" :disabled="importing" @click="fileEl?.click()">
           {{ importing ? `导入中 ${importPct}%` : '📥 导入书籍' }}

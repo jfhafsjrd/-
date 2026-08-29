@@ -173,6 +173,52 @@ router.put('/:id/progress', (req, res) => {
   res.json({ ok: true })
 })
 
+/* ---------- 书签：添加 / 列表随书返回 / 删除 ---------- */
+router.post('/:id/bookmarks', (req, res) => {
+  const book = getBook(req.params.id)
+  if (!book) return res.status(404).json({ error: '书籍不存在' })
+  const { chapter = 0, page = 0, pct = 0, label = '' } = req.body
+  const marks = book.bookmarks || []
+  marks.push({ chapter: Number(chapter) || 0, page: Number(page) || 0, pct: Number(pct) || 0, label: String(label).slice(0, 60), at: new Date().toISOString() })
+  books().updateOne(book.id, { bookmarks: marks })
+  res.status(201).json({ bookmarks: marks })
+})
+
+router.delete('/:id/bookmarks/:idx', (req, res) => {
+  const book = getBook(req.params.id)
+  if (!book) return res.status(404).json({ error: '书籍不存在' })
+  const marks = book.bookmarks || []
+  marks.splice(Number(req.params.idx), 1)
+  books().updateOne(book.id, { bookmarks: marks })
+  res.json({ bookmarks: marks })
+})
+
+/* ---------- TXT 全文搜索：返回命中章节 + 摘录 ---------- */
+router.get('/:id/search', (req, res) => {
+  const book = getBook(req.params.id)
+  if (!book || book.type !== 'txt') return res.status(404).json({ error: '书籍不存在' })
+  const q = String(req.query.q || '').trim()
+  if (!q) return res.json({ hits: [] })
+  const file = path.join(BOOK_DIR, `${book.id}.txt`)
+  if (!fs.existsSync(file)) return res.status(410).json({ error: '文件已丢失' })
+  const text = fs.readFileSync(file, 'utf-8')
+  const hits = []
+  for (let i = 0; i < book.chapters.length && hits.length < 30; i++) {
+    const ch = book.chapters[i]
+    const body = text.slice(ch.start, ch.end)
+    const first = body.indexOf(q)
+    if (first === -1) continue
+    const count = body.split(q).length - 1
+    hits.push({
+      index: i,
+      title: ch.title,
+      count,
+      excerpt: body.slice(Math.max(0, first - 20), first + q.length + 40).replace(/\s+/g, ' ').trim(),
+    })
+  }
+  res.json({ hits })
+})
+
 /* ---------- 删除 ---------- */
 router.delete('/:id', (req, res) => {
   const book = getBook(req.params.id)
