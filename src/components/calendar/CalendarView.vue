@@ -27,6 +27,7 @@ const SOURCE_META = {
 }
 
 /* ---------- 状态 ---------- */
+const today = ymd() // 今日聚焦与逾期判断共用的今天
 const cursor = ref(new Date()) // 当前月游标
 const eventsByDate = ref({})
 const eventsLoading = ref(true)

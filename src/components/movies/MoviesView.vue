@@ -462,8 +462,10 @@ async function doTraktSync() {
   traktSyncing.value = true
   try {
     const r = await api.trakt.sync()
-    toast.success(`同步完成：新进待看 ${r.wantAdded} 部、已看完 ${r.doneAdded} 部，已存在 ${r.skipped} 部` +
-      (r.rated ? `，补入评分 ${r.rated} 条` : ''))
+    const bits = [`新进待看 ${r.wantAdded}`, `新看完 ${r.doneAdded}`, `状态升级 ${r.updated || 0}`, `补评分 ${r.rated}`, `无变化 ${r.skipped}`]
+    const changed = r.wantAdded + r.doneAdded + (r.updated || 0) + r.rated
+    const msg = `Trakt 同步完成：${bits.join(' · ')}`
+    changed > 0 ? toast.success(msg) : toast.info(msg + '（Trakt 上没有新变化）')
     await loadLibrary()
   } catch (e) {
     toast.error(e.message)

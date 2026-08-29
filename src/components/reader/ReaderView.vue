@@ -186,9 +186,11 @@ const sorted = computed(() => {
     </StateShell>
 
     <!-- 沉浸阅读器 -->
-    <!-- 沉浸阅读器（EPUB 与 TXT 共用分栏阅读器） -->
-    <TxtReader v-if="reading?.type === 'txt' || reading?.type === 'epub'" :book="reading" @close="reading = null; load()" />
-    <ComicReader v-else-if="reading?.type === 'cbz'" :book="reading" @close="reading = null; load()" />
+    <!-- 沉浸阅读器（Teleport 到 body：脱离 .main 层叠上下文，避免被侧边栏压住） -->
+    <Teleport to="body">
+      <TxtReader v-if="reading?.type === 'txt' || reading?.type === 'epub'" :book="reading" @close="reading = null; load()" />
+      <ComicReader v-else-if="reading?.type === 'cbz'" :book="reading" @close="reading = null; load()" />
+    </Teleport>
   </div>
 </template>
 

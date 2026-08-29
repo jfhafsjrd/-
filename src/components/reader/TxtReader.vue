@@ -14,10 +14,21 @@ const emit = defineEmits(['close'])
 /* ---------- 阅读设置（localStorage 持久） ---------- */
 const LS = 'lifeos_reader_cfg'
 const cfg = ref(Object.assign(
-  { fontSize: 19, lineHeight: 1.9, family: 'sans', theme: 'paper', autoSec: 8 },
+  { fontSize: 19, lineHeight: 1.9, family: 'sans', theme: 'paper', autoSec: 8, mode: 'paged' },
   JSON.parse(localStorage.getItem(LS) || '{}'),
 ))
 watch(cfg, () => localStorage.setItem(LS, JSON.stringify(cfg.value)), { deep: true })
+
+/** 阅读模式：paged 电子书分栏左右翻 / scroll 上下滚动（微信读书式） */
+const isScroll = computed(() => cfg.value.mode === 'scroll')
+function toggleMode() {
+  cfg.value.mode = isScroll.value ? 'paged' : 'scroll'
+  if (isScroll.value) {
+    nextTick(() => scrollEl.value?.scrollTo({ top: 0 }))
+  } else {
+    nextTick(() => nextTick(() => repaginate(page.value)))
+  }
+}
 
 const THEMES = {
   paper: { bg: '#f5efe1', fg: '#3d3427', name: '纸张' },
@@ -44,9 +55,22 @@ const page = ref(0)
 const pageCount = ref(1)
 const viewW = ref(0)
 const bodyEl = ref(null)
+const scrollEl = ref(null)
+const scrollWithin = ref(0) // 滚动模式：本章内滚动进度 0~1
 const barsVisible = ref(false)
 const tocShow = ref(false)
 const setShow = ref(false)
+
+/** 正文样式：翻页模式多栏+位移；滚动模式限宽居中自然流 */
+const bodyStyle = computed(() => {
+  const base = {
+    fontSize: cfg.value.fontSize + 'px',
+    lineHeight: cfg.value.lineHeight,
+    fontFamily: FAMILIES[cfg.value.family].stack,
+  }
+  if (isScroll.value) return { ...base, maxWidth: '720px', margin: '0 auto' }
+  return { ...base, columnGap: GAP + 'px', transform: `translateX(-${page.value * (viewW.value + GAP)}px)` }
+})
 
 const progress = ref(props.book.progress || {})
 let saveTimer = 0
@@ -63,7 +87,12 @@ async function loadChapter(i, keepPage = 0) {
     text.value = r.text
     await nextTick()
     await nextTick()
-    repaginate(keepPage)
+    if (isScroll.value) {
+      scrollWithin.value = 0
+      scrollEl.value?.scrollTo({ top: 0 })
+    } else {
+      repaginate(keepPage)
+    }
   } finally {
     loading.value = false
   }
@@ -72,7 +101,7 @@ async function loadChapter(i, keepPage = 0) {
 /* ---------- 分页：多栏内容总宽 → 页数 ---------- */
 function repaginate(targetPage) {
   const el = bodyEl.value
-  if (!el) return
+  if (!el || isScroll.value) return
   const w = el.clientWidth
   if (w <= 0) return
   viewW.value = w
@@ -81,6 +110,7 @@ function repaginate(targetPage) {
 }
 
 function turn(dir) {
+  if (isScroll.value) return
   const next = page.value + dir
   if (next < 0) {
     if (chapterIdx.value > 0) return loadChapter(chapterIdx.value - 1, 9999)
@@ -96,7 +126,7 @@ function turn(dir) {
 
 const pct = computed(() => {
   if (!chapters.value.length) return 0
-  const within = pageCount.value > 1 ? page.value / (pageCount.value - 1) : 0
+  const within = isScroll.value ? scrollWithin.value : pageCount.value > 1 ? page.value / (pageCount.value - 1) : 0
   return Math.min(100, ((chapterIdx.value + within) / chapters.value.length) * 100)
 })
 
@@ -185,6 +215,11 @@ const hint = ref('')
 
 function onBodyClick(e) {
   if (autoOn.value) stopAuto()
+  if (isScroll.value) {
+    /* 滚动模式：点击只唤出/收起菜单 */
+    barsVisible.value = !barsVisible.value
+    return
+  }
   const x = e.clientX / window.innerWidth
   if (x < 0.28) turn(-1)
   else if (x > 0.72) turn(1)
@@ -192,11 +227,25 @@ function onBodyClick(e) {
 }
 function onKey(e) {
   if (tocShow.value || setShow.value) return
+  if (e.key === 'Escape') return emit('close')
+  if (isScroll.value) return /* 滚动模式：方向键/空格交给原生滚动 */
   if (e.key === 'ArrowLeft' || e.key === 'PageUp') { stopAuto(); turn(-1) }
   else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); stopAuto(); turn(1) }
-  else if (e.key === 'Escape') emit('close')
   else if (e.key.toLowerCase() === 'a') toggleAuto()
   else if (e.key.toLowerCase() === 'b') addBookmark()
+}
+/* 滚动模式：滚动节流存进度 */
+let scrollTimer = 0
+function onScroll() {
+  if (!isScroll.value) return
+  clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(() => {
+    const el = scrollEl.value
+    if (!el) return
+    const max = el.scrollHeight - el.clientHeight
+    scrollWithin.value = max > 0 ? Math.min(1, el.scrollTop / max) : 0
+    scheduleSave()
+  }, 250)
 }
 let touchX = 0
 let touchY = 0
@@ -205,6 +254,7 @@ function onTouchStart(e) {
   touchY = e.touches[0].clientY
 }
 function onTouchEnd(e) {
+  if (isScroll.value) return /* 滚动模式交给原生滑动 */
   const dx = e.changedTouches[0].clientX - touchX
   const dy = e.changedTouches[0].clientY - touchY
   if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) {
@@ -241,7 +291,8 @@ onBeforeUnmount(() => {
   stopAuto()
   clearTimeout(saveTimer)
   clearTimeout(searchTimer)
-  api.reader.saveProgress(props.book.id, { chapter: chapterIdx.value, page: page.value }, pct.value).catch(() => {})
+  clearTimeout(scrollTimer)
+  api.reader.saveProgress(props.book.id, { chapter: chapterIdx.value, page: isScroll.value ? 0 : page.value }, pct.value).catch(() => {})
 })
 
 async function jumpChapter(i) {
@@ -267,27 +318,25 @@ async function jumpBookmark(b) {
         <span>{{ chapterTitle }}</span>
       </div>
       <div class="tr-actions">
+        <button class="tr-btn" :class="{ glow: isScroll }" :title="'切换翻页/滚动模式'" @click="toggleMode">{{ isScroll ? '📜 滚动' : '📖 翻页' }}</button>
         <button class="tr-btn" title="添加书签 (B)" @click="addBookmark">🔖</button>
         <button class="tr-btn" @click="tocShow = true">目录</button>
         <button class="tr-btn" @click="setShow = true">Aa</button>
       </div>
     </header>
 
-    <!-- 正文：多栏横向分页，段落首行缩进 -->
-    <main class="tr-main" @click="onBodyClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
+    <!-- 正文：翻页=多栏横向分页 / 滚动=限宽自然流 -->
+    <main
+      ref="scrollEl"
+      class="tr-main"
+      :class="{ scroll: isScroll }"
+      @click="onBodyClick"
+      @scroll.passive="onScroll"
+      @touchstart.passive="onTouchStart"
+      @touchend.passive="onTouchEnd"
+    >
       <div v-if="loading" class="tr-loading">正在翻到这一章…</div>
-      <div
-        v-else
-        ref="bodyEl"
-        class="tr-body"
-        :style="{
-          fontSize: cfg.fontSize + 'px',
-          lineHeight: cfg.lineHeight,
-          fontFamily: FAMILIES[cfg.family].stack,
-          columnGap: GAP + 'px',
-          transform: `translateX(-${page * (viewW + GAP)}px)`,
-        }"
-      >
+      <div v-else ref="bodyEl" class="tr-body" :style="bodyStyle">
         <p v-for="(p, i) in paragraphs" :key="i">{{ p }}</p>
       </div>
       <div v-if="hint" class="tr-hint">{{ hint }}</div>
@@ -386,6 +435,11 @@ async function jumpBookmark(b) {
 .txt-reader { position: fixed; inset: 0; z-index: 150; display: flex; flex-direction: column; transition: background 0.3s; }
 
 .tr-main { flex: 1; overflow: hidden; position: relative; padding: 34px 30px; cursor: pointer; user-select: none; }
+.tr-main.scroll { overflow-y: auto; cursor: default; }
+.tr-main.scroll .tr-body {
+  height: auto;
+  padding-bottom: 12vh;
+}
 .tr-body {
   height: 100%;
   column-fill: auto;
