@@ -103,3 +103,25 @@ html[data-theme='light'] .hero {
     radial-gradient(420px 200px at 92% 110%, rgba(139, 92, 246, 0.14), transparent 70%),
     linear-gradient(120deg, rgba(124, 58, 237, 0.1), rgba(56, 189, 248, 0.05) 60%, var(--card) 90%);
 }
+/* 日历待办快速输入区：暗色底 → 亮色淡底 */
+html[data-theme='light'] .qa {
+  background: rgba(30, 32, 72, 0.04);
+}
+/* 荣誉墙/游戏卡片的无图占位：暗紫渐变 → 亮色淡紫 */
+html[data-theme='light'] .hc-fallback,
+html[data-theme='light'] .ip-spine,
+html[data-theme='light'] .mv-cover-fallback {
+  background: linear-gradient(160deg, #dcd6f2, #bcb4dd);
+}
+/* 成就明细弹窗里的暗底项 */
+html[data-theme='light'] .ach-item {
+  background: rgba(30, 32, 72, 0.04);
+}
+/* 媒体卡（最近在玩）两主题都保持深色底：大图挂掉时白色文字依然可读 */
+html[data-theme='light'] .recent-card {
+  background: linear-gradient(160deg, #262038, #141625);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+html[data-theme='light'] .recent-card:hover {
+  background: linear-gradient(160deg, #2c2544, #181a2c);
+}

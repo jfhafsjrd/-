@@ -23,10 +23,10 @@ export function startScheduler() {
     }
   })
 
-  cron.schedule('17 7 * * *', () => traktAutoSync())
+  cron.schedule('37 */2 * * *', () => traktAutoSync())
 
   // 启动 45 秒后检查一次 Steam 缓存新鲜度（避开启动高峰）
   setTimeout(() => steamSyncIfStale(), 45000)
 
-  console.log('[cron] 定时任务就绪：Steam 每 2 小时 · 哨兵每 30 分钟 · Trakt 每天 07:17')
+  console.log('[cron] 定时任务就绪：Steam 每 2 小时 · 哨兵每 30 分钟 · Trakt 每 2 小时')
 }

@@ -113,7 +113,7 @@ function draw(t) {
 
 function loop(t) {
   raf = requestAnimationFrame(loop)
-  if (t - last < 33) return // ~30fps
+  if (t - last < 41) return // ~24fps
   last = t
   draw(t)
 }
@@ -121,7 +121,7 @@ function loop(t) {
 function resize() {
   const cvs = canvas.value
   if (!cvs) return
-  const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.25)
   cvs.width = Math.floor(window.innerWidth * dpr)
   cvs.height = Math.floor(window.innerHeight * dpr)
   cvs.style.width = '100%'

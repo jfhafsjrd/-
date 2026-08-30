@@ -23,6 +23,16 @@ const toggleTheme = () => applyTheme(theme.value === 'light' ? 'dark' : 'light')
 
 /* 命令面板由 App.vue 挂载，这里只广播开关事件 */
 const emitPalette = () => window.dispatchEvent(new CustomEvent('lifeos:palette'))
+
+/* 悬停预取：鼠标掠过导航项就提前拉取该板块的懒加载代码块（点击秒开） */
+const prefetched = new Set()
+function prefetch(m) {
+  if (prefetched.has(m.name) || typeof m.view !== 'function') return
+  prefetched.add(m.name)
+  try {
+    Promise.resolve(m.view()).catch(() => {})
+  } catch { /* 静态导入的首页无 view 函数 */ }
+}
 </script>
 
 <template>
@@ -42,6 +52,7 @@ const emitPalette = () => window.dispatchEvent(new CustomEvent('lifeos:palette')
         :to="m.path"
         class="nav-item"
         :class="{ active: route.name === m.name }"
+        @mouseenter="prefetch(m)"
       >
         <span class="nav-icon">{{ m.icon }}</span>
         <span class="nav-label">{{ m.label }}</span>

@@ -65,6 +65,8 @@ async function loadLibrary() {
 
 /* ---------- 年度观看统计 ---------- */
 const stats = ref(null)
+/* 海报加载失败的条目 → 回退占位（上游 404/网络抖动不再裂图） */
+const coverFail = ref(new Set())
 const statMax = computed(() => Math.max(1, ...(stats.value?.months || [])))
 async function loadStats() {
   try {
@@ -462,7 +464,7 @@ async function doTraktSync() {
   traktSyncing.value = true
   try {
     const r = await api.trakt.sync()
-    const bits = [`新进待看 ${r.wantAdded}`, `新看完 ${r.doneAdded}`, `状态升级 ${r.updated || 0}`, `补评分 ${r.rated}`, `无变化 ${r.skipped}`]
+    const bits = [`新进待看 ${r.wantAdded}`, `新看完 ${r.doneAdded}`, `状态升级 ${r.updated || 0}`, `进度更新 ${r.progress || 0}`, `补评分 ${r.rated}`, `无变化 ${r.skipped}`]
     const changed = r.wantAdded + r.doneAdded + (r.updated || 0) + r.rated
     const msg = `Trakt 同步完成：${bits.join(' · ')}`
     changed > 0 ? toast.success(msg) : toast.info(msg + '（Trakt 上没有新变化）')
@@ -722,7 +724,7 @@ async function doTraktSync() {
               :style="{ animationDelay: `${Math.min(idx * 0.04, 0.4)}s` }"
             >
               <div class="mv-cover">
-                <img v-if="m.cover" :src="coverUrl(m.cover)" :alt="m.title" loading="lazy" />
+                <img v-if="m.cover && !coverFail.has(m.id)" :src="coverUrl(m.cover)" :alt="m.title" loading="lazy" @error="coverFail.add(m.id)" />
                 <div v-else class="mv-cover-fallback">🎞️</div>
               </div>
               <div class="mv-body">

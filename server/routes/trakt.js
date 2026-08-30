@@ -244,7 +244,7 @@ async function runSync() {
   const watchedAtOf = (item) => item?.last_watched_at || ''
 
   /* 第一遍：全部条目映射 + 分流「已存在（补缺/升级）」和「新增（待中文反查）」 */
-  const result = { wantAdded: 0, doneAdded: 0, skipped: 0, rated: 0, updated: 0, enriched: 0 }
+  const result = { wantAdded: 0, doneAdded: 0, skipped: 0, rated: 0, updated: 0, progress: 0, enriched: 0 }
   const fresh = []
 
   const stage = (mapped, status) => {
@@ -269,6 +269,7 @@ async function runSync() {
         patch.airedEps = mapped.airedEps
         if (mapped.lastWatchedAt) patch.lastWatchedAt = mapped.lastWatchedAt
         patch.nextEpisode = mapped.nextEpisode || ''
+        result.progress++
       }
       if (Object.keys(patch).length) movies().updateOne(existing.id, patch)
       result.skipped++
@@ -306,7 +307,7 @@ export async function traktAutoSync() {
   if (!rec || !CLIENT_ID) return false
   try {
     const r = await runSync()
-    console.log(`[cron] Trakt 自动同步：待看 +${r.wantAdded} · 已看 +${r.doneAdded} · 状态升级 ${r.updated} · 补评 ${r.rated} · 跳过 ${r.skipped}`)
+    console.log(`[cron] Trakt 自动同步：待看 +${r.wantAdded} · 已看 +${r.doneAdded} · 状态升级 ${r.updated} · 进度更新 ${r.progress} · 补评 ${r.rated} · 跳过 ${r.skipped}`)
     return true
   } catch (err) {
     console.warn('[cron] Trakt 自动同步失败:', err.message)
