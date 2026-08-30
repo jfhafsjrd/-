@@ -363,8 +363,9 @@ function ymdLocal(d) {
 /* ---------- 双向同步：Life OS → Trakt ----------
  * 标"看完了"或打分时推回 Trakt，保持两边记录一致：
  *   电影 done → 入历史 + 移出待看；评分(1-10) → 写评分（电影和剧集都推）
- *   剧集不推历史 —— 分集观看以 Trakt 播放器侧记录为准，避免误标全季
- * 未授权/未配置时直接返回 false，PUT 路由无感跳过。
+ *   剧集 done → 移出待看 + 评分（分集历史不走整剧标记，避免把未看的都标了；
+ *                分集进度用 setProgress 按实际看到的位置推）
+ * 未授权/未配置时直接返回 false，调用方无感跳过。
  */
 export async function pushToTrakt(movie, rating = 0) {
   const token = await getAccessToken()
@@ -375,7 +376,10 @@ export async function pushToTrakt(movie, rating = 0) {
     if (movie.type !== 'tv' && movie.status === 'done') {
       const body = movie.watchedAt ? { movies: [{ ...ids, watched_at: movie.watchedAt }] } : { movies: [ids] }
       await fetchJSON(`${API}/sync/history`, { method: 'POST', ...h, body: JSON.stringify(body) })
-      await fetchJSON(`${API}/sync/watchlist/remove`, { method: 'POST', ...h, body: JSON.stringify({ movies: [ids] }) }).catch(() => {})
+    }
+    if (movie.status === 'done') {
+      const kind = movie.type === 'tv' ? 'shows' : 'movies'
+      await fetchJSON(`${API}/sync/watchlist/remove`, { method: 'POST', ...h, body: JSON.stringify({ [kind]: [ids] }) }).catch(() => {})
     }
     if (rating >= 1 && rating <= 10) {
       const kind = movie.type === 'tv' ? 'shows' : 'movies'
@@ -388,6 +392,71 @@ export async function pushToTrakt(movie, rating = 0) {
   } catch (err) {
     console.warn(`[trakt] 推送《${movie.title}》失败:`, err.message)
     return false
+  }
+}
+
+/**
+ * 剧集分集进度双向同步：把本地「看到第 N 集（全剧累计）」缺失的剧集推回 Trakt 历史。
+ * 流程：tmdbId 查 traktId → 拉全剧分集清单（跳过特别篇）→ 取前 N 集一次性入历史。
+ */
+export async function pushEpisodeHistory(movie, totalWatched) {
+  const token = await getAccessToken()
+  if (!token || !CLIENT_ID || !movie?.tmdbId || totalWatched <= 0) {
+    return false
+  }
+  const h = { headers: traktHeaders(token) }
+  try {
+    const found = await fetchJSON(`${API}/search/tmdb/${movie.tmdbId}?type=show`, h)
+    const traktId = (Array.isArray(found) ? found[0]?.show?.ids?.trakt : found?.show?.ids?.trakt) || (Array.isArray(found) ? found[0]?.ids?.trakt : 0)
+    if (!traktId) return false
+    const seasons = await fetchJSON(`${API}/shows/${traktId}/seasons?extended=episodes`, h)
+    const eps = (Array.isArray(seasons) ? seasons : [])
+      .filter((s) => s.number > 0)
+      .flatMap((s) => (s.episodes || []).map((e) => ({ season: s.number, number: e.number })))
+      .slice(0, totalWatched)
+    if (!eps.length) return false
+    /* Trakt 要求分集嵌套在 seasons 里；扁平 episodes 会被忽略 → 整剧按全播标记（血泪教训） */
+    const seasonMap = new Map()
+    for (const ep of eps) {
+      if (!seasonMap.has(ep.season)) seasonMap.set(ep.season, [])
+      seasonMap.get(ep.season).push({ number: ep.number })
+    }
+    const seasonPayload = [...seasonMap].map(([number, episodes]) => ({ number, episodes }))
+    await fetchJSON(`${API}/sync/history`, {
+      method: 'POST', ...h,
+      body: JSON.stringify({ shows: [{ ids: { trakt: traktId }, seasons: seasonPayload }] }),
+    })
+    return true
+  } catch (err) {
+    console.warn(`[trakt] 推送《${movie.title}》分集进度失败:`, err.message)
+    return false
+  }
+}
+
+/** "S2E7" / "2x7" / 纯数字（全剧累计）→ 累计集数（S/E 格式经 Trakt 分集清单换算） */
+export async function parseProgressMark(movie, mark) {
+  const m = String(mark || '').trim().match(/^(?:(\d{1,2})x(\d{1,3}))|(?:s(\d{1,2})e(\d{1,3}))$|^(?:(\d{1,4}))$/i)
+  if (!m) return NaN
+  if (m[5]) return Number(m[5])
+  const s = Number(m[1] || m[3])
+  const e = Number(m[2] || m[4])
+  const token = await getAccessToken()
+  if (!token || !CLIENT_ID || !movie?.tmdbId) return NaN
+  try {
+    const h = { headers: traktHeaders(token) }
+    const found = await fetchJSON(`${API}/search/tmdb/${movie.tmdbId}?type=show`, h)
+    const traktId = (Array.isArray(found) ? found[0]?.show?.ids?.trakt : found?.show?.ids?.trakt) || (Array.isArray(found) ? found[0]?.ids?.trakt : 0)
+    if (!traktId) return NaN
+    const seasons = await fetchJSON(`${API}/shows/${traktId}/seasons?extended=episodes`, h)
+    let total = 0
+    for (const season of Array.isArray(seasons) ? seasons : []) {
+      const count = season.episodes?.length || season.episode_count || 0
+      if (season.number === s) return total + e
+      if (season.number > 0 && season.number < s) total += count
+    }
+    return NaN
+  } catch {
+    return NaN
   }
 }
 

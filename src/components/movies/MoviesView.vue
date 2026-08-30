@@ -162,10 +162,10 @@ function openDetail(item) {
 
 const TYPE_BY_LABEL = { 电影: 'movie', 剧集: 'tv', 动漫: 'anime', 纪录片: 'doc' }
 
-async function addToLibrary(item) {
+async function addToLibrary(item, status = 'want') {
   adding.value = true
   try {
-    await api.movies.add({
+    const r = await api.movies.add({
       tmdbId: item.tmdbId,
       title: item.title,
       type: TYPE_BY_LABEL[item.typeLabel] || item.mediaType || 'movie',
@@ -174,16 +174,39 @@ async function addToLibrary(item) {
       tmdbRating: item.tmdbRating,
       year: item.year,
       overview: item.overview || '',
-      status: 'want',
+      status,
     })
-    toast.success(`《${item.title}》已加入待看`)
+    if (status === 'done') {
+      confetti({ count: 30 })
+      toast.success(r.traktPushed ? `《${item.title}》归档完成 · 已同步 Trakt ✓` : `《${item.title}》归档完成`)
+    } else {
+      toast.success(`《${item.title}》已加入待看`)
+    }
     detailShow.value = false
     trending.value = trending.value.filter((t) => t.tmdbId !== item.tmdbId)
     await loadLibrary()
+    loadStats()
   } catch (e) {
     toast.error(e.message)
   } finally {
     adding.value = false
+  }
+}
+
+/** 点集数进度 → 手动设定观看位置，双向同步 Trakt（S2E7 或 累计集数） */
+async function setProgress(movie) {
+  const input = prompt(
+    `《${movie.title}》看到哪里了？\n可填 S2E7 这种格式，或直接填全剧累计集数（如 21）`,
+    movie.nextEpisode || 'S1E1',
+  )
+  if (!input || !input.trim()) return
+  try {
+    const r = await api.movies.setProgress(movie.id, input.trim())
+    const i = library.value.findIndex((m) => m.id === movie.id)
+    if (i > -1) library.value[i] = { ...library.value[i], ...r }
+    toast.success(r.traktPushed ? `进度已设为 ${r.watchedEps} 集 · 缺失剧集已同步 Trakt ✓` : `进度已设为 ${r.watchedEps} 集`)
+  } catch (e) {
+    toast.error(e.message)
   }
 }
 
@@ -737,11 +760,17 @@ async function doTraktSync() {
                   <span class="r-sep">|</span>
                   <span class="r-mine">个人 <b>{{ m.personalRating ? m.personalRating.toFixed(1) : '—' }}</b></span>
                 </p>
-                <div v-if="m.airedEps > 0" class="mv-progress" :class="{ over: (m.watchedEps || 0) >= m.airedEps }">
+                <button
+                  v-if="m.airedEps > 0"
+                  class="mv-progress"
+                  :class="{ over: (m.watchedEps || 0) >= m.airedEps }"
+                  title="点击设定观看进度（双向同步 Trakt）"
+                  @click.stop="setProgress(m)"
+                >
                   <span class="mv-eps mono">📺 {{ m.watchedEps || 0 }}/{{ m.airedEps }} 集</span>
                   <span v-if="m.nextEpisode && (m.watchedEps || 0) < m.airedEps" class="mv-next mono">→ {{ m.nextEpisode }}</span>
                   <span class="mv-bar"><i :style="{ width: Math.min(100, Math.round(((m.watchedEps || 0) / m.airedEps) * 100)) + '%' }"></i></span>
-                </div>
+                </button>
                 <p v-if="m.comment" class="mv-comment">“{{ m.comment }}”</p>
                 <p v-if="m.reservationTime" class="mv-reserve">
                   📅 预约 {{ m.reservationTime.replace('T', ' ') }}
@@ -1331,13 +1360,22 @@ kbd {
 .r-sep {
   opacity: 0.4;
 }
-/* 追剧进度：Trakt 同步的剧集卡片显示 已看/已播 集数 + 微进度条 */
+/* 追剧进度：Trakt 同步的剧集卡片显示 已看/已播 集数 + 微进度条（点击可手动设定，双向同步） */
 .mv-progress {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 0.78rem;
   color: var(--text-2);
+  border: none;
+  background: none;
+  padding: 2px 0;
+  cursor: pointer;
+  text-align: left;
+  transition: opacity var(--dur-fast);
+}
+.mv-progress:hover {
+  opacity: 0.75;
 }
 .mv-eps {
   white-space: nowrap;

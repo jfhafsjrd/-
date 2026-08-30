@@ -53,6 +53,7 @@ export const api = {
     trending: () => http.get('/movies/trending'),
     add: (data) => http.post('/movies', data),
     update: (id, data) => http.put(`/movies/${id}`, data),
+    setProgress: (id, mark) => http.put(`/movies/${id}/progress`, { mark }, { timeout: 60000 }),
     remove: (id) => http.delete(`/movies/${id}`),
   },
 

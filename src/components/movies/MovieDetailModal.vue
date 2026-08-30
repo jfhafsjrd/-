@@ -50,7 +50,8 @@ function onImgError() {
     </div>
     <template #footer>
       <button class="btn" @click="emit('close')">关闭</button>
-      <button class="btn primary" :disabled="adding" @click="emit('add', item)">
+      <button class="btn success-btn" :disabled="adding" @click="emit('add', item, 'done')">✓ 已看完</button>
+      <button class="btn primary" :disabled="adding" @click="emit('add', item, 'want')">
         <IconSvg v-if="!adding" name="plus" :size="15" />
         <span v-else>加入中…</span>
         {{ adding ? '' : '加入我的待看' }}
@@ -118,6 +119,15 @@ function onImgError() {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.success-btn {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+.success-btn:hover {
+  background: var(--success);
+  color: #fff;
 }
 .overview {
   font-size: 0.9rem;

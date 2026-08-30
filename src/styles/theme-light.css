@@ -125,3 +125,28 @@ html[data-theme='light'] .recent-card {
 html[data-theme='light'] .recent-card:hover {
   background: linear-gradient(160deg, #2c2544, #181a2c);
 }
+/* 游戏封面加载占位：亮色下不再是一块深色 */
+html[data-theme='light'] .g-cover {
+  background: rgba(30, 32, 72, 0.07);
+}
+/* 明亮模式展示柜：压暗层改白纱，文字换深色 */
+html[data-theme='light'] .rc-shade {
+  background: linear-gradient(90deg, rgba(244, 243, 250, 0.94) 25%, rgba(244, 243, 250, 0.55) 60%, rgba(244, 243, 250, 0.15));
+}
+html[data-theme='light'] .rc-info {
+  color: var(--text-1);
+}
+html[data-theme='light'] .rc-tag {
+  color: #7c22ce;
+}
+html[data-theme='light'] .rc-name {
+  color: var(--text-1);
+  text-shadow: none;
+}
+html[data-theme='light'] .rc-meta {
+  color: var(--text-2);
+}
+html[data-theme='light'] .rc-capsule {
+  border-color: rgba(30, 32, 72, 0.15);
+  box-shadow: 0 8px 22px -10px rgba(30, 32, 72, 0.35);
+}

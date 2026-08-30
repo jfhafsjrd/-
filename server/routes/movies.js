@@ -10,7 +10,7 @@
 import { Router } from 'express'
 import { collection } from '../db.js'
 import { fetchJSON } from '../utils.js'
-import { pushToTrakt } from './trakt.js'
+import { pushToTrakt, pushEpisodeHistory, parseProgressMark } from './trakt.js'
 
 const router = Router()
 const movies = () => collection('movies')
@@ -146,7 +146,7 @@ router.get('/', (req, res) => {
   res.json(movies().find(query, { sort: { createdAt: -1 } }))
 })
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { tmdbId = 0, title, type = 'movie', cover = '', backdrop = '', tmdbRating = 0, year = '', overview = '', status = 'want' } = req.body
   if (!String(title || '').trim()) return res.status(400).json({ error: '标题不能为空' })
   if (tmdbId && movies().findOne({ tmdbId: Number(tmdbId) })) {
@@ -167,7 +167,42 @@ router.post('/', (req, res) => {
     reservationTime: '',
     watchedAt: status === 'done' ? new Date().toISOString() : '',
   })
-  res.status(201).json(movie)
+  /* 双向同步：趋势墙"加入已看完"立刻推 Trakt（电影入历史 / 剧集移出待看） */
+  let traktPushed = false
+  if (movie.status === 'done' && movie.tmdbId > 0) {
+    try {
+      traktPushed = await pushToTrakt(movie, 0)
+    } catch { /* 推送失败不影响入库 */ }
+  }
+  res.status(201).json({ ...movie, traktPushed })
+})
+
+/** 手动设定剧集进度（双向）：{ watched: 累计集数 } 或 { mark: 'S2E7' }，缺失剧集推回 Trakt 历史 */
+router.put('/:id/progress', async (req, res) => {
+  const movie = movies().findOne({ id: Number(req.params.id) })
+  if (!movie) return res.status(404).json({ error: '条目不存在' })
+  if (movie.type !== 'tv') return res.status(400).json({ error: '只有剧集支持进度同步' })
+
+  let watched = Number(req.body.watched)
+  if (!Number.isFinite(watched) && req.body.mark) {
+    watched = await parseProgressMark(movie, req.body.mark)
+  }
+  if (!Number.isFinite(watched) || watched < 0) return res.status(400).json({ error: '进度格式不对，示例：21 或 S2E7' })
+
+  movies().updateOne(movie.id, {
+    watchedEps: watched,
+    airedEps: Math.max(watched, movie.airedEps || 0),
+    status: 'done',
+    watchedAt: movie.watchedAt || new Date().toISOString(),
+  })
+  let traktPushed = false
+  if (watched > (movie.watchedEps || 0) && movie.tmdbId > 0) {
+    try {
+      traktPushed = await pushEpisodeHistory({ ...movie, watchedEps: watched }, watched)
+    } catch { /* 推送失败不影响本地 */ }
+  }
+  const updated = movies().findOne({ id: movie.id })
+  res.json({ ...updated, traktPushed })
 })
 
 /** 预约看剧时间 → 日历事件联动 */
