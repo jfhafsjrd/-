@@ -107,9 +107,10 @@ async function doUnlock() {
           v-model="unlockCode"
           type="password"
           class="input uc-input"
-          placeholder="站主口令"
+          placeholder="站主口令（6 位生日）"
           autocomplete="current-password"
           autofocus
+          maxlength="6"
         />
         <button class="btn primary uc-btn" type="submit" :disabled="unlockBusy || !unlockCode.trim()">
           {{ unlockBusy ? '解锁中…' : '解锁' }}

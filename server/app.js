@@ -62,6 +62,7 @@ const IMG_HOST_ALLOWLIST = new Set([
   'community.cloudflare.steamstatic.com',
   'cdn.cloudflare.steamstatic.com',
   'media.steampowered.com',
+  'steamcdn-a.akamaihd.net',
   'avatars.cloudflare.steamstatic.com',
   'avatars.steamstatic.com',
   'avatars.githubusercontent.com',

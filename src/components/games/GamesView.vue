@@ -621,8 +621,8 @@ const syncPct = computed(() =>
   display: flex;
   align-items: flex-end;
   gap: 14px;
-  min-height: 128px;
-  padding: 16px 18px;
+  aspect-ratio: 460 / 215; /* 与 Steam header 原生比例一致，背景完整不裁剪 */
+  padding: 14px 18px;
   cursor: pointer;
   overflow: hidden;
 }
