@@ -79,18 +79,65 @@ async function loadStats() {
 async function loadTrending() {
   trendingError.value = ''
   try {
-    trending.value = await api.movies.trending()
+    /* 真随机：每次进入随机起点（前 20 页）+ 本地洗牌，打开都不一样 */
+    trendingStartPage.value = 1 + Math.floor(Math.random() * 20)
+    const list = await api.movies.trending(trendingStartPage.value)
+    trending.value = shuffle(list)
+    trendingExhausted.value = false
   } catch (e) {
     trendingError.value = e.message
   }
 }
 
+/** 无限滚动：向下追一页（服务端一次回 2 页），去重后洗牌追加 */
+const trendingStartPage = ref(0)
+const trendingLoadingMore = ref(false)
+const trendingExhausted = ref(false)
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+async function loadMoreTrending() {
+  if (trendingLoadingMore.value || trendingExhausted.value || !trendingStartPage.value) return
+  trendingLoadingMore.value = true
+  try {
+    trendingStartPage.value += 2
+    const more = await api.movies.trending(trendingStartPage.value)
+    if (!more.length) {
+      trendingExhausted.value = true
+      return
+    }
+    const seen = new Set(trending.value.map((t) => t.tmdbId))
+    const fresh = shuffle(more.filter((t) => !seen.has(t.tmdbId)))
+    trending.value = [...trending.value, ...fresh]
+  } catch {
+    /* 静默：下次滚动再试 */
+  } finally {
+    trendingLoadingMore.value = false
+  }
+}
+
+/* 无限滚动哨兵：滚动接近趋势区底部 → 追加下一批 */
+const trendSentinel = ref(null)
+let trendObserver = null
 onMounted(() => {
   loadLibrary()
   loadTrending()
   loadStats()
   api.trakt.status().then((s) => (traktConfigured.value = s.configured)).catch(() => {})
+  trendObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMoreTrending()
+    },
+    { rootMargin: '300px' },
+  )
+  trendObserver.observe(trendSentinel.value)
 })
+onBeforeUnmount(() => trendObserver?.disconnect())
 
 /* ---------- 搜索（防抖 450ms） ---------- */
 const doSearch = debounce(async (q) => {
@@ -708,6 +755,9 @@ async function doTraktSync() {
         ⚠️ 趋势获取失败（{{ trendingError }}），海报墙暂不可用，下方本地库正常
       </div>
       <PosterWall v-else :items="trending" @pick="openDetail" />
+      <div ref="trendSentinel" class="trend-sentinel mono">
+        {{ trendingLoadingMore ? '正在加载更多…' : trendingExhausted ? '— 已经到底啦 —' : '' }}
+      </div>
 
       <StateShell :loading="libLoading" :error="libError" :empty="!library.length"
         empty-emoji="🍿" empty-text="待看录还是空的" empty-sub="从上方趋势海报墙挑一部，或搜索片名入库"
@@ -895,6 +945,13 @@ async function doTraktSync() {
 
 .mv-root {
   position: relative;
+}
+.trend-sentinel {
+  height: 26px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  letter-spacing: 0.15em;
 }
 .page-head-hero {
   position: relative;

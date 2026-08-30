@@ -129,9 +129,9 @@ html[data-theme='light'] .recent-card:hover {
 html[data-theme='light'] .g-cover {
   background: rgba(30, 32, 72, 0.07);
 }
-/* 明亮模式展示柜：压暗层改白纱，文字换深色 */
+/* 明亮模式展示柜：白纱只压底部文字区，游戏封面保持鲜艳 */
 html[data-theme='light'] .rc-shade {
-  background: linear-gradient(90deg, rgba(244, 243, 250, 0.94) 25%, rgba(244, 243, 250, 0.55) 60%, rgba(244, 243, 250, 0.15));
+  background: linear-gradient(180deg, rgba(244, 243, 250, 0) 45%, rgba(244, 243, 250, 0.55) 68%, rgba(244, 243, 250, 0.96) 88%);
 }
 html[data-theme='light'] .rc-info {
   color: var(--text-1);
@@ -149,4 +149,14 @@ html[data-theme='light'] .rc-meta {
 html[data-theme='light'] .rc-capsule {
   border-color: rgba(30, 32, 72, 0.15);
   box-shadow: 0 8px 22px -10px rgba(30, 32, 72, 0.35);
+}
+/* 荣誉墙亮色：底部黑纱改白纱，文字换深色（图片区保持原样不再发黑） */
+html[data-theme='light'] .hc-body {
+  background: linear-gradient(transparent, rgba(244, 243, 250, 0.6) 45%, rgba(244, 243, 250, 0.97) 85%);
+}
+html[data-theme='light'] .hc-name {
+  color: var(--text-1);
+}
+html[data-theme='light'] .hc-meta {
+  color: var(--text-2);
 }

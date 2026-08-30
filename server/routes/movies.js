@@ -70,15 +70,17 @@ router.get('/search', async (req, res) => {
   }
 })
 
-/* ---------- 趋势海报墙：随机起点连续拉 2 页合并去重；成功结果缓存 5 分钟（代理波动时海报墙依然稳定） ---------- */
+/* ---------- 趋势海报墙：默认随机起点拉 2 页（缓存 5 分钟）；?page=N 分页模式（无限滚动追加，不缓存） ---------- */
 let trendingCache = { at: 0, data: null }
 
 router.get('/trending', async (req, res) => {
-  if (trendingCache.data && Date.now() - trendingCache.at < 5 * 60 * 1000) {
+  const pageParam = Number(req.query.page) || 0
+  if (!pageParam && trendingCache.data && Date.now() - trendingCache.at < 5 * 60 * 1000) {
     return res.json(trendingCache.data)
   }
   if (!TMDB_KEY) return res.status(503).json({ error: '未配置 TMDB_API_KEY' })
-  const page = 1 + Math.floor(Math.random() * 4) // 前 5 页随机起点
+  const page = pageParam || 1 + Math.floor(Math.random() * 20) // 默认前 20 页随机起点
+  if (page > 90) return res.json([]) // TMDB 趋势池边界
   try {
     const [a, b] = await Promise.all([
       fetchJSON(`${TMDB}/trending/all/week?api_key=${TMDB_KEY}&language=zh-CN&page=${page}`, { timeout: 10000 }),
@@ -94,15 +96,15 @@ router.get('/trending', async (req, res) => {
         return true
       })
       .map(mapTmdb)
-    if (list.length) trendingCache = { at: Date.now(), data: list }
+    if (!pageParam && list.length) trendingCache = { at: Date.now(), data: list }
     res.json(list)
   } catch (err) {
     console.warn('[movies] TMDB 趋势失败:', err.message)
     // 失败但有陈旧缓存（30 分钟内）时降级返回陈旧数据，别让海报墙空转
-    if (trendingCache.data && Date.now() - trendingCache.at < 30 * 60 * 1000) {
+    if (!pageParam && trendingCache.data && Date.now() - trendingCache.at < 30 * 60 * 1000) {
       return res.json(trendingCache.data)
     }
-    res.status(502).json({ error: `趋势获取失败（${err.message}）` })
+    res.status(pageParam ? 200 : 502).json([])
   }
 })
 
