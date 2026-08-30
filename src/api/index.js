@@ -13,11 +13,12 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-/** 错误归一化：任何失败都抛出带 message 的 Error；401 广播全局下线事件 */
+/** 错误归一化：任何失败都抛出带 message 的 Error；401/403 广播全局事件（403=访客写被拒，唤起解锁卡） */
 http.interceptors.response.use(
   (res) => res.data,
   (err) => {
     if (err.response?.status === 401) window.dispatchEvent(new CustomEvent('lifeos:401'))
+    if (err.response?.status === 403) window.dispatchEvent(new CustomEvent('lifeos:403'))
     const msg =
       err.response?.data?.error ||
       (err.response?.status === 413 ? '文件太大，被服务器拒绝（超过上传上限）' : '') ||

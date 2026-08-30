@@ -38,6 +38,32 @@ onMounted(async () => {
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash)
   }
 })
+
+/* 写操作被拒（403 访客只读）→ 右下角解锁卡：输一次口令恢复站主身份 */
+const unlockShow = ref(false)
+const unlockCode = ref('')
+const unlockErr = ref('')
+const unlockBusy = ref(false)
+onMounted(() => {
+  window.addEventListener('lifeos:403', () => {
+    unlockShow.value = true
+  })
+})
+async function doUnlock() {
+  if (!unlockCode.value.trim() || unlockBusy.value) return
+  unlockBusy.value = true
+  unlockErr.value = ''
+  try {
+    const r = await api.auth.login(unlockCode.value.trim())
+    localStorage.setItem('lifeos_token', r.token)
+    unlockShow.value = false
+    setTimeout(() => window.location.reload(), 200)
+  } catch (e) {
+    unlockErr.value = e.message
+  } finally {
+    unlockBusy.value = false
+  }
+}
 </script>
 
 <template>
@@ -64,6 +90,34 @@ onMounted(async () => {
   </main>
 
   <ToastHost />
+
+  <!-- 站主解锁卡：写操作被拒时出现在右下角 -->
+  <Transition name="unlock">
+    <div v-if="unlockShow" class="unlock-card glass-card">
+      <div class="uc-head">
+        <span class="uc-ico">🔒</span>
+        <div class="uc-txt">
+          <b>当前是访客身份（只读）</b>
+          <span>删除、同步等修改操作需要解锁</span>
+        </div>
+        <button class="uc-close" aria-label="关闭" @click="unlockShow = false">✕</button>
+      </div>
+      <form class="uc-form" @submit.prevent="doUnlock">
+        <input
+          v-model="unlockCode"
+          type="password"
+          class="input uc-input"
+          placeholder="站主口令"
+          autocomplete="current-password"
+          autofocus
+        />
+        <button class="btn primary uc-btn" type="submit" :disabled="unlockBusy || !unlockCode.trim()">
+          {{ unlockBusy ? '解锁中…' : '解锁' }}
+        </button>
+      </form>
+      <p v-if="unlockErr" class="uc-err">{{ unlockErr }}</p>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -117,5 +171,74 @@ onMounted(async () => {
 .boot-enter-from,
 .boot-leave-to {
   opacity: 0;
+}
+
+/* 站主解锁卡 */
+.unlock-card {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 160;
+  width: min(340px, calc(100vw - 40px));
+  padding: 16px 18px;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lift);
+}
+.uc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.uc-ico {
+  font-size: 1.2rem;
+}
+.uc-txt {
+  flex: 1;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.uc-txt b {
+  font-size: 0.88rem;
+}
+.uc-txt span {
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+.uc-close {
+  border: none;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.uc-close:hover {
+  color: var(--text-1);
+}
+.uc-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.uc-input {
+  flex: 1;
+  padding: 8px 12px;
+}
+.uc-btn {
+  flex-shrink: 0;
+}
+.uc-err {
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: var(--danger);
+}
+.unlock-enter-active,
+.unlock-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s var(--ease);
+}
+.unlock-enter-from,
+.unlock-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
 }
 </style>
