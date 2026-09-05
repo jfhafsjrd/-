@@ -2,7 +2,7 @@
 /** 桌面侧边栏 — 由模块注册表驱动 */
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { modules } from '@/router/modules'
+import { visibleModules as modules } from '@/router/modules'
 
 const route = useRoute()
 const navItems = computed(() => modules)
@@ -23,6 +23,11 @@ const toggleTheme = () => applyTheme(theme.value === 'light' ? 'dark' : 'light')
 
 /* 命令面板由 App.vue 挂载，这里只广播开关事件 */
 const emitPalette = () => window.dispatchEvent(new CustomEvent('lifeos:palette'))
+
+/* 一键下载全站数据备份（JSON）— cookie 携带站主令牌 */
+function exportData() {
+  window.open('/api/stats/export', '_blank')
+}
 
 /* 悬停预取：鼠标掠过导航项就提前拉取该板块的懒加载代码块（点击秒开） */
 const prefetched = new Set()
@@ -69,6 +74,10 @@ function prefetch(m) {
       <button class="theme-toggle" :title="theme === 'dark' ? '切换到明亮模式' : '切换到暗黑模式'" @click="toggleTheme">
         <span class="tt-icon">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
         <span>{{ theme === 'dark' ? '明亮模式' : '暗黑模式' }}</span>
+      </button>
+      <button class="theme-toggle" title="下载全站数据备份（JSON）" @click="exportData">
+        <span class="tt-icon">⬇️</span>
+        <span>导出数据</span>
       </button>
       <div class="foot-card">
         <span class="pulse-dot"></span>

@@ -25,6 +25,13 @@ export function deriveToken() {
 
 const tokenOf = (req) => req.get('x-auth-token') || req.cookies?.auth_token || ''
 
+/** 站主专属：即使浏览公开，这类端点也必须持有令牌（数据导出等） */
+export function requireOwner(req, res, next) {
+  if (!deriveToken()) return next()
+  if (tokenOf(req) && tokenOf(req) === deriveToken()) return next()
+  res.status(403).json({ error: '访客只读：此操作需站主身份' })
+}
+
 /** 鉴权中间件：GET/HEAD 浏览全放行；写操作校验站主令牌（访客 403 只读） */
 export function authMiddleware(req, res, next) {
   if (!deriveToken()) return next()

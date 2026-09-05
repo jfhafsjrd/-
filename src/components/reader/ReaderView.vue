@@ -31,7 +31,13 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+onMounted(() => {
+  load()
+  api.stats.reading().then((r) => (readingStats.value = r)).catch(() => {})
+})
+
+/* ---------- 阅读连续天数（生活统计） ---------- */
+const readingStats = ref(null)
 
 async function onFile(e) {
   const file = e.target.files?.[0]
@@ -121,6 +127,13 @@ const sorted = computed(() => {
     </div>
 
     <!-- ============ 在读中（一眼续读） ============ -->
+    <!-- ============ 在读中（一眼续读） ============ -->
+    <div v-if="readingStats && (readingStats.daysTotal > 0 || inProgress)" class="shelf-meta glass-card">
+      <span class="sm-chip">{{ readingStats.streak > 0 ? `🔥 连续阅读 ${readingStats.streak} 天` : '📖 读一点，点亮连续天数' }}</span>
+      <span class="sm-chip" v-if="readingStats.charsMonth > 0">📐 本月 {{ (readingStats.charsMonth / 10000).toFixed(1) }} 万字</span>
+      <span class="sm-chip" v-if="readingStats.daysMonth > 0">📅 本月阅读 {{ readingStats.daysMonth }} 天</span>
+    </div>
+
     <section v-if="inProgress && !reading" class="ip-card glass-card" @click="open(inProgress)">
       <img class="ip-cover" v-if="inProgress.type !== 'txt' && !coverFail.has(inProgress.id)" :src="api.reader.coverUrl(inProgress.id)" :alt="inProgress.title" @error="coverFail.add(inProgress.id)" />
       <div v-else class="ip-cover ip-spine">📖</div>
@@ -201,6 +214,20 @@ const sorted = computed(() => {
 .ib-track i { display: block; height: 100%; background: var(--accent-grad); transition: width 0.2s; }
 
 /* 在读中主卡 */
+.shelf-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+}
+.sm-chip {
+  font-size: 0.74rem;
+  color: var(--text-2);
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+}
 .ip-card {
   display: flex;
   align-items: center;

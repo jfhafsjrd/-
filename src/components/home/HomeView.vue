@@ -120,6 +120,7 @@ async function toggleTodo(t) {
           · 待看 <b>{{ wantCount }}</b> 部 · 待办 <b>{{ todayTodos.length }}</b> 件
         </p>
         <p class="hero-quote">「{{ quote.text }}」<span class="hero-quote-by">—— {{ quote.author }}</span></p>
+        <RouterLink to="/wrapped" class="hero-wrapped">🎆 打开 {{ new Date().getFullYear() }} 年度回顾</RouterLink>
       </div>
       <div class="hero-ring" title="今天已过的时间进度">
         <svg viewBox="0 0 84 84" width="96" height="96" aria-hidden="true">
@@ -350,6 +351,24 @@ async function toggleTodo(t) {
   margin-left: 10px;
   font-size: 0.76rem;
   color: var(--text-3);
+}
+.hero-wrapped {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 7px 16px;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  color: #fff;
+  background: linear-gradient(90deg, rgba(219, 39, 119, 0.75), rgba(124, 58, 237, 0.75));
+  box-shadow: 0 6px 20px -6px rgba(219, 39, 119, 0.5);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast);
+}
+.hero-wrapped:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -8px rgba(219, 39, 119, 0.6);
+  color: #fff;
 }
 .hero-ring {
   position: relative;

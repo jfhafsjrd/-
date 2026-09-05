@@ -2,7 +2,7 @@
 /** 移动端顶栏 + 抽屉导航（<768px 显示） */
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { modules } from '@/router/modules'
+import { visibleModules as modules } from '@/router/modules'
 
 const route = useRoute()
 const open = ref(false)

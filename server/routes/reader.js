@@ -365,12 +365,19 @@ function pageFile(id, n) {
   return hit ? path.join(String(id), hit) : ''
 }
 
-/* ---------- 进度 ---------- */
+/* ---------- 进度（含阅读日志：正增量记入当日，供 streak 统计） ---------- */
 router.put('/:id/progress', (req, res) => {
   const book = getBook(req.params.id)
   if (!book) return res.status(404).json({ error: '书籍不存在' })
   const { progress = {}, pct = 0 } = req.body
   books().updateOne(book.id, { progress: { ...book.progress, ...progress }, pct, lastReadAt: new Date().toISOString() })
+
+  const delta = Math.round(((pct - (book.pct || 0)) / 100) * (book.chars || 0))
+  if (delta > 50) {
+    const date = new Date().toISOString().slice(0, 10)
+    const prev = collection('readingLog').findOne({ date })
+    collection('readingLog').upsert({ date }, { date, chars: (prev?.chars || 0) + delta })
+  }
   res.json({ ok: true })
 })
 

@@ -6,6 +6,7 @@ import LowPolyBg from '@/components/layout/LowPolyBg.vue'
 import ToastHost from '@/components/common/ToastHost.vue'
 import CommandPalette from '@/components/common/CommandPalette.vue'
 import { api } from '@/api'
+import { ymd } from '@/utils/format'
 
 const booting = ref(true)
 onMounted(() => setTimeout(() => (booting.value = false), 350))
@@ -46,9 +47,15 @@ const unlockErr = ref('')
 const unlockBusy = ref(false)
 onMounted(() => {
   window.addEventListener('lifeos:403', () => {
+    /* 当日手动关过就不再打扰（明天再说） */
+    if (sessionStorage.getItem('lifeos_unlock_dismissed') === ymd()) return
     unlockShow.value = true
   })
 })
+function dismissUnlock() {
+  unlockShow.value = false
+  sessionStorage.setItem('lifeos_unlock_dismissed', ymd())
+}
 async function doUnlock() {
   if (!unlockCode.value.trim() || unlockBusy.value) return
   unlockBusy.value = true
@@ -100,7 +107,7 @@ async function doUnlock() {
           <b>当前是访客身份（只读）</b>
           <span>删除、同步等修改操作需要解锁</span>
         </div>
-        <button class="uc-close" aria-label="关闭" @click="unlockShow = false">✕</button>
+        <button class="uc-close" aria-label="关闭" @click="dismissUnlock">✕</button>
       </div>
       <form class="uc-form" @submit.prevent="doUnlock">
         <input

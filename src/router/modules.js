@@ -11,6 +11,7 @@ import HomeView from '@/components/home/HomeView.vue'
 
 export const modules = [
   { path: '/', name: 'home', label: '首页', icon: '🏠', view: HomeView, desc: '总览面板' },
+  { path: '/wrapped', name: 'wrapped', label: '年度回顾', icon: '🎆', desc: '你的年度生活报告', hidden: true, view: () => import('@/components/wrapped/WrappedView.vue') },
   { path: '/movies', name: 'movies', label: '影视', icon: '🎬', view: () => import('@/components/movies/MoviesView.vue'), desc: '待看录 · 已看完' },
   { path: '/games', name: 'games', label: '游戏', icon: '🎮', view: () => import('@/components/games/GamesView.vue'), desc: '成就仓 · 荣誉墙' },
   { path: '/calendar', name: 'calendar', label: '日历', icon: '📅', view: () => import('@/components/calendar/CalendarView.vue'), desc: '日程 · 待办' },
@@ -18,3 +19,6 @@ export const modules = [
   { path: '/reader', name: 'reader', label: '阅读', icon: '📖', view: () => import('@/components/reader/ReaderView.vue'), desc: '小说 · 漫画' },
   { path: '/links', name: 'links', label: '导航', icon: '🔗', view: () => import('@/components/links/LinksView.vue'), desc: '书签 · 存活检测' },
 ]
+
+/** 侧边栏/移动端菜单可见项（hidden 的模块仍可路由直达） */
+export const visibleModules = modules.filter((m) => !m.hidden)

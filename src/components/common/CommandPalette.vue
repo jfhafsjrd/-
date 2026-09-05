@@ -19,9 +19,11 @@ const inputEl = ref(null)
 /* 数据源随应用启动预取（面板打开即有数据，不用等跨境请求） */
 const moviesCache = ref(null)
 const linksCache = ref(null)
+const todosCache = ref(null)
 onMounted(() => {
   api.movies.list().then((l) => (moviesCache.value = l)).catch(() => {})
   api.links.list().then((l) => (linksCache.value = Array.isArray(l) ? l : [])).catch(() => {})
+  api.todos.list().then((l) => (todosCache.value = l)).catch(() => {})
 })
 
 const open = computed(() => props.modelValue)
@@ -42,8 +44,16 @@ const commands = computed(() => {
   }
   list.push(
     {
+      group: '动作', icon: '🎆', label: `打开 ${new Date().getFullYear()} 年度回顾`, desc: 'Wrapped 故事式回顾',
+      run: () => router.push('/wrapped'),
+    },
+    {
       group: '动作', icon: '🔄', label: '同步 Trakt 观看记录', desc: '拉取待看/已看/评分',
       run: () => router.push('/movies'),
+    },
+    {
+      group: '动作', icon: '⬇️', label: '导出数据备份', desc: '下载全站 JSON',
+      run: () => window.open('/api/stats/export', '_blank'),
     },
     {
       group: '动作', icon: '☀️', label: '切换 明亮/暗黑 主题', desc: '即时生效并记忆',
@@ -55,6 +65,15 @@ const commands = computed(() => {
       },
     },
   )
+  /* 待办：跳转日历处理 */
+  for (const t of todosCache.value || []) {
+    if (t.done) continue
+    list.push({
+      group: '待办', icon: t.recurring && t.recurring !== 'none' ? '🔁' : '📋', label: t.title,
+      desc: t.dueDate ? `截止 ${String(t.dueDate).slice(0, 10)}` : '无截止',
+      run: () => router.push('/calendar'),
+    })
+  }
   for (const m of moviesCache.value || []) {
     list.push({
       group: '影视', icon: m.type === 'tv' ? '📺' : '🎞️', label: m.title,

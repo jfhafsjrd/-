@@ -41,7 +41,7 @@ const selectedDate = ref(ymd())
 const dayModal = ref(false)
 const eventForm = ref({ title: '', time: '' })
 const eventSaving = ref(false)
-const quickAdd = ref({ title: '', category: 'life', dueDate: '' })
+const quickAdd = ref({ title: '', category: 'life', dueDate: '', recurring: 'none' })
 const quickSaving = ref(false)
 
 /* ---------- 日历格子 ---------- */
@@ -175,9 +175,10 @@ async function addTodo() {
       title: t.title.trim(),
       category: t.category,
       dueDate: t.dueDate ? `${t.dueDate} 09:00` : '',
+      recurring: t.recurring,
     })
-    quickAdd.value = { title: '', category: t.category, dueDate: t.dueDate }
-    toast.success('待办已添加' + (t.dueDate ? '，日历同步 📅' : ''))
+    quickAdd.value = { title: '', category: t.category, dueDate: t.dueDate, recurring: t.recurring }
+    toast.success('待办已添加' + (t.dueDate ? '，日历同步 📅' : '') + (t.recurring !== 'none' ? ' · 循环任务已就位 🔁' : ''))
     await Promise.all([loadTodos(), loadEvents()])
   } catch (e) {
     toast.error(e.message)
@@ -400,6 +401,14 @@ async function removeEvent(ev) {
               </button>
             </div>
             <input v-model="quickAdd.dueDate" type="date" class="input qa-date" aria-label="截止日期" />
+          </div>
+          <div class="qa-row">
+            <div class="qa-cats">
+              <button class="chip sm" :class="{ on: quickAdd.recurring === 'none' }" @click="quickAdd.recurring = 'none'">➊ 一次</button>
+              <button class="chip sm" :class="{ on: quickAdd.recurring === 'daily' }" @click="quickAdd.recurring = 'daily'">🔁 每天</button>
+              <button class="chip sm" :class="{ on: quickAdd.recurring === 'weekly' }" @click="quickAdd.recurring = 'weekly'">🔁 每周</button>
+            </div>
+            <span class="text-3" style="font-size: 0.68rem">完成后自动生成下一次</span>
           </div>
           <button class="btn primary qa-btn" :disabled="quickSaving" @click="addTodo">
             {{ quickSaving ? '添加中…' : '＋ 添加待办' }}

@@ -131,6 +131,8 @@ export const api = {
   /* 生活统计 */
   stats: {
     heatmap: () => http.get('/stats/heatmap'),
+    wrapped: () => http.get('/stats/wrapped'),
+    reading: () => http.get('/stats/reading'),
   },
 
   /* 阅读 */

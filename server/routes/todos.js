@@ -72,7 +72,29 @@ router.put('/:id/toggle', (req, res) => {
   if (!todo) return res.status(404).json({ error: '待办不存在' })
   const updated = todos().updateOne(todo.id, { done: !todo.done })
   syncEvent(updated)
-  res.json(updated)
+
+  /* 循环任务：完成时自动生成下一次（daily +1 天 / weekly +7 天） */
+  let spawned = null
+  if (updated.done && todo.recurring && todo.recurring !== 'none') {
+    const step = todo.recurring === 'weekly' ? 7 : 1
+    const base = todo.dueDate ? new Date(todo.dueDate.replace(' ', 'T')) : new Date()
+    if (!Number.isNaN(base.getTime())) {
+      base.setDate(base.getDate() + step)
+      const pad = (n) => String(n).padStart(2, '0')
+      const nextDue = `${base.getFullYear()}-${pad(base.getMonth() + 1)}-${pad(base.getDate())}` +
+        (todo.dueDate?.includes(' ') ? ' ' + todo.dueDate.split(' ')[1] : '')
+      spawned = todos().insert({
+        title: todo.title,
+        note: todo.note || '',
+        category: todo.category || 'life',
+        priority: todo.priority || 0,
+        dueDate: nextDue,
+        recurring: todo.recurring,
+      })
+      syncEvent(spawned)
+    }
+  }
+  res.json({ ...updated, spawned })
 })
 
 router.delete('/:id', (req, res) => {
