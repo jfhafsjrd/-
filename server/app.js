@@ -140,6 +140,22 @@ const server = app.listen(PORT, () => {
   console.log(`[boot] Life OS 后端已启动 → http://localhost:${PORT}`)
 })
 
+/* ---- 崩溃捕获：写文件而非 stderr（小内存机器被 OOM/SIGKILL 时 pm2 日志会缺失） ---- */
+const crashLog = (type, detail) => {
+  try {
+    fs.appendFileSync(path.join(__dirname, 'crash.log'), `${new Date().toISOString()} [${type}] ${detail}\n`)
+  } catch { /* 尽力而为 */ }
+}
+process.on('unhandledRejection', (reason) => {
+  crashLog('unhandledRejection', (reason?.stack || String(reason)).slice(0, 800))
+  console.error('[crash] unhandledRejection:', reason?.message || reason)
+})
+process.on('uncaughtException', (err) => {
+  crashLog('uncaughtException', (err.stack || err.message || String(err)).slice(0, 800))
+  console.error('[crash] uncaughtException:', err.message)
+  process.exit(1) // 状态不可信，交给 pm2 重启
+})
+
 /* ---- 定时任务（可选加载，失败不影响服务） ---- */
 try {
   const { startScheduler } = await import('./scheduler.js')

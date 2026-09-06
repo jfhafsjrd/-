@@ -6,3 +6,4 @@ server/steam_cache.json
 *.log
 .DS_Store
 server/books/
+server/crash.log
