@@ -324,8 +324,31 @@ function onScroll() {
       if (hit) chapterTitle.value = hit.title
     }
     if (el.scrollTop + el.clientHeight > el.scrollHeight - 600) appendNext()
+    if (el.scrollTop < 120) prependPrev()
     scheduleSave()
   }, 200)
+}
+
+/** 无缝滚动（向上）：距顶 120px 自动衔接上一章，滚动位置锚定补偿 */
+let prepending = false
+async function prependPrev() {
+  const first = loaded.value[0]
+  const prevIdx = (first?.index ?? chapterIdx.value) - 1
+  if (prepending || prevIdx < 0) return
+  prepending = true
+  const el = scrollEl.value
+  const before = el?.scrollHeight || 0
+  try {
+    const r = await fetchChapter(prevIdx)
+    if (loaded.value.some((c) => c.index === r.index)) return
+    loaded.value.unshift({ index: r.index, title: r.title, text: r.text })
+    await nextTick()
+    if (el) el.scrollTop += el.scrollHeight - before
+  } catch {
+    /* 静默：下次滚动再试 */
+  } finally {
+    prepending = false
+  }
 }
 
 const onResize = () => repaginate()

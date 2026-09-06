@@ -22,15 +22,19 @@ const todos = ref([])
 const todayEvents = ref([])
 const traktEps = ref([])
 const rss = ref([])
+const rssLoading = ref(true)
 const feed = ref('sspai')
 const today = ymd()
 
 async function loadRss() {
+  rssLoading.value = true
   try {
     const r = await api.feeds.list(feed.value)
     rss.value = (r.items || []).slice(0, 6)
   } catch {
     rss.value = []
+  } finally {
+    rssLoading.value = false
   }
 }
 
@@ -296,7 +300,7 @@ async function toggleTodo(t) {
     </div>
 
     <!-- ============ 资讯流 ============ -->
-    <section v-if="rss.length" class="panel glass-card">
+    <section v-if="rss.length || rssLoading" class="panel glass-card">
       <header class="panel-head">
         <h2>📰 科技资讯</h2>
         <div class="rss-tabs">
@@ -304,7 +308,8 @@ async function toggleTodo(t) {
           <button class="chip" :class="{ on: feed === 'ruanyifeng' }" @click="feed = 'ruanyifeng'; loadRss()">阮一峰</button>
         </div>
       </header>
-      <ul class="rss-list">
+      <div v-if="!rss.length" class="skeleton" style="height: 96px; border-radius: 10px"></div>
+      <ul v-else class="rss-list">
         <li v-for="it in rss" :key="it.link">
           <a :href="it.link" target="_blank" rel="noopener" class="rss-item">
             <span class="rss-title">{{ it.title }}</span>
