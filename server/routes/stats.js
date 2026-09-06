@@ -64,7 +64,14 @@ router.get('/wrapped', (req, res) => {
   let peakMonth = 0
   months.forEach((n, i) => { if (n > months[peakMonth]) peakMonth = i })
 
-  const rated = yearDone.filter((m) => m.personalRating > 0).sort((a, b) => b.personalRating - a.personalRating)
+  let rated = yearDone.filter((m) => m.personalRating > 0)
+  let ratedScope = 'year'
+  if (!rated.length) {
+    /* 今年无评分 → 回退总榜（标注范围，前端据此改文案） */
+    rated = done.filter((m) => m.personalRating > 0)
+    ratedScope = 'all'
+  }
+  rated.sort((a, b) => b.personalRating - a.personalRating)
   const best = rated[0] || null
   const topRated = rated.slice(0, 3).map((m) => ({ title: m.title, rating: m.personalRating, cover: m.cover }))
   const episodes = yearDone.reduce((n, m) => n + (m.airedEps > 0 ? m.watchedEps || 0 : 0), 0)
@@ -93,7 +100,7 @@ router.get('/wrapped', (req, res) => {
   res.json({
     year,
     movies: { count: yearDone.length, episodes, months, peakMonth: peakMonth + 1, best: best ? { title: best.title, rating: best.personalRating, cover: best.cover } : null,
-      topRated, byType },
+      topRated, byType, ratedScope },
     games: { total: games.length, hours: gameHours, playing: gamePlaying, top: topGames },
     todos: { done: todosDone, open: todosAll.filter((t) => !t.done).length },
     reading: { books: books.length, chars: bookChars, avgPct: bookDonePct },

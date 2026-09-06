@@ -120,7 +120,7 @@ const monthMax = computed(() => Math.max(1, ...(data.value?.movies.months || [])
         <template v-if="data.movies.best">
           <img v-if="data.movies.best.cover" class="w-poster" :src="data.movies.best.cover.startsWith('http') ? data.movies.best.cover : tmdbPoster(data.movies.best.cover, 'w500')" :alt="data.movies.best.title" />
           <h1 class="w-big" style="font-size: 2rem">{{ data.movies.best.title }}</h1>
-          <p class="w-label">你的年度最高分 · <b class="mono">{{ data.movies.best.rating }}</b> 分</p>
+          <p class="w-label">{{ data.movies.ratedScope === 'all' ? '总榜最高分' : '你的年度最高分' }} · <b class="mono">{{ data.movies.best.rating }}</b> 分</p>
           <div v-if="(data.movies.topRated || []).length > 1" class="w-tops">
             <div v-for="(m, i) in data.movies.topRated" :key="m.title" class="w-top">
               <span class="w-top-rank mono">#{{ i + 1 }}</span>
