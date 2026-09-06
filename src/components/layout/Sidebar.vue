@@ -29,6 +29,33 @@ function exportData() {
   window.open('/api/stats/export', '_blank')
 }
 
+/* ---------- 数据导入恢复：接受 /export 格式的备份 JSON，覆盖全站数据 ---------- */
+import { api } from '@/api'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
+const importEl = ref(null)
+const importing = ref(false)
+
+async function onImportFile(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  if (!confirm(`⚠️ 将用「${file.name}」覆盖当前全部数据（影视/待办/书签等），确定继续？`)) return
+  importing.value = true
+  try {
+    const text = await file.text()
+    const dump = JSON.parse(text)
+    const r = await api.importData(dump)
+    toast.success(`数据恢复完成（${r.restored} 条），页面即将刷新`)
+    setTimeout(() => window.location.reload(), 1200)
+  } catch (err) {
+    toast.error(err.message.includes('JSON') ? '文件不是有效的备份 JSON' : err.message)
+  } finally {
+    importing.value = false
+  }
+}
+
 /* 悬停预取：鼠标掠过导航项就提前拉取该板块的懒加载代码块（点击秒开） */
 const prefetched = new Set()
 function prefetch(m) {
@@ -78,6 +105,11 @@ function prefetch(m) {
       <button class="theme-toggle" title="下载全站数据备份（JSON）" @click="exportData">
         <span class="tt-icon">⬇️</span>
         <span>导出数据</span>
+      </button>
+      <input ref="importEl" type="file" accept=".json" hidden @change="onImportFile" />
+      <button class="theme-toggle" title="从备份 JSON 恢复全站数据（覆盖当前）" :disabled="importing" @click="importEl?.click()">
+        <span class="tt-icon">⬆️</span>
+        <span>{{ importing ? '恢复中…' : '导入数据' }}</span>
       </button>
       <div class="foot-card">
         <span class="pulse-dot"></span>

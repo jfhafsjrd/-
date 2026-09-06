@@ -26,6 +26,57 @@ const rssLoading = ref(true)
 const feed = ref('sspai')
 const today = ymd()
 
+/* ---------- 订阅源管理：预设 + 自定义 ---------- */
+const PRESETS = [
+  { key: 'sspai', name: '少数派' },
+  { key: 'ruanyifeng', name: '阮一峰' },
+  { key: 'ithome', name: 'IT之家' },
+]
+const customSources = ref([])
+const feedTabs = computed(() => [
+  ...PRESETS,
+  ...customSources.value.map((s) => ({ key: String(s.id), name: s.name, custom: true })),
+])
+const addingFeed = ref(false)
+async function loadSources() {
+  try {
+    const r = await api.feeds.sources()
+    customSources.value = r.custom || []
+  } catch {
+    /* 静默 */
+  }
+}
+async function addFeed() {
+  const name = prompt('订阅源名称（如：少数派）')
+  if (!name?.trim()) return
+  const url = prompt('RSS 地址（如 https://example.com/feed）')
+  if (!url?.trim()) return
+  addingFeed.value = true
+  try {
+    await api.feeds.addSource(name.trim(), url.trim())
+    await loadSources()
+    feed.value = String((customSources.value.at(-1) || {}).id)
+    loadRss()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    addingFeed.value = false
+  }
+}
+async function removeFeed(tab) {
+  if (!confirm(`删除订阅源「${tab.name}」？`)) return
+  try {
+    await api.feeds.removeSource(tab.key)
+    await loadSources()
+    if (feed.value === tab.key) {
+      feed.value = 'sspai'
+      loadRss()
+    }
+  } catch (e) {
+    toast.error(e.message)
+  }
+}
+
 function isRecent(date) {
   return date && (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000 <= 3
 }
@@ -102,6 +153,7 @@ onMounted(() => {
   loadWeather()
   loadAll()
   loadRss()
+  loadSources()
 })
 
 /* ---------- 派生 ---------- */
@@ -308,9 +360,10 @@ async function toggleTodo(t) {
       <header class="panel-head">
         <h2>📰 科技资讯</h2>
         <div class="rss-tabs">
-          <button class="chip" :class="{ on: feed === 'sspai' }" @click="feed = 'sspai'; loadRss()">少数派</button>
-          <button class="chip" :class="{ on: feed === 'ruanyifeng' }" @click="feed = 'ruanyifeng'; loadRss()">阮一峰</button>
-          <button class="chip" :class="{ on: feed === 'ithome' }" @click="feed = 'ithome'; loadRss()">IT之家</button>
+          <button v-for="t in feedTabs" :key="t.key" class="chip" :class="{ on: feed === t.key }" @click="feed = t.key; loadRss()">
+            {{ t.name }}<i v-if="t.custom" class="rss-del" title="删除此源" @click.stop="removeFeed(t)">✕</i>
+          </button>
+          <button class="chip rss-add" :disabled="addingFeed" @click="addFeed" title="添加自定义 RSS 源">＋</button>
         </div>
       </header>
       <div v-if="!rss.length" class="skeleton" style="height: 96px; border-radius: 10px"></div>
@@ -732,6 +785,20 @@ async function toggleTodo(t) {
   font-size: 0.72rem;
   color: var(--text-3);
   text-align: center;
+}
+.rss-del {
+  font-size: 0.6rem;
+  font-style: normal;
+  margin-left: 5px;
+  opacity: 0.45;
+}
+.rss-del:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+.rss-add {
+  color: var(--t-accent);
+  font-weight: 700;
 }
 .rss-tabs {
   display: flex;

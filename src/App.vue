@@ -1,12 +1,16 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import MobileHeader from '@/components/layout/MobileHeader.vue'
 import LowPolyBg from '@/components/layout/LowPolyBg.vue'
 import ToastHost from '@/components/common/ToastHost.vue'
 import CommandPalette from '@/components/common/CommandPalette.vue'
+import Modal from '@/components/common/Modal.vue'
 import { api } from '@/api'
 import { ymd } from '@/utils/format'
+
+const router = useRouter()
 
 const booting = ref(true)
 onMounted(() => setTimeout(() => (booting.value = false), 350))
@@ -22,6 +26,53 @@ onMounted(() => {
   })
   window.addEventListener('lifeos:palette', () => (paletteShow.value = true))
 })
+
+/* ---------- 全局快捷键：g 弦导航 + ? 呼出帮助 ---------- */
+const SHORTCUTS = [
+  { keys: 'g h', to: '/', label: '首页' },
+  { keys: 'g m', to: '/movies', label: '影视' },
+  { keys: 'g e', to: '/games', label: '游戏' },
+  { keys: 'g c', to: '/calendar', label: '日历' },
+  { keys: 'g i', to: '/insights', label: '数据中心' },
+  { keys: 'g b', to: '/github', label: 'GitHub' },
+  { keys: 'g d', to: '/reader', label: '阅读' },
+  { keys: 'g n', to: '/links', label: '导航' },
+  { keys: 'g w', to: '/wrapped', label: '年度回顾' },
+]
+const helpShow = ref(false)
+let gPending = false
+let gTimer = 0
+function onGlobalKey(e) {
+  const el = e.target
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return
+  if (e.ctrlKey || e.metaKey || e.altKey) return
+  if (helpShow.value) {
+    if (e.key === 'Escape' || e.key === '?') helpShow.value = false
+    return
+  }
+  if (gPending) {
+    const hit = SHORTCUTS.find((s) => s.keys.endsWith(' ' + e.key.toLowerCase()))
+    gPending = false
+    clearTimeout(gTimer)
+    if (hit) {
+      e.preventDefault()
+      router.push(hit.to)
+    }
+    return
+  }
+  if (e.key.toLowerCase() === 'g') {
+    gPending = true
+    clearTimeout(gTimer)
+    gTimer = setTimeout(() => (gPending = false), 1200)
+    return
+  }
+  if (e.key === '?') {
+    e.preventDefault()
+    helpShow.value = true
+  }
+}
+onMounted(() => window.addEventListener('keydown', onGlobalKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKey))
 
 /* 站主专属链接（/?auth=口令）自动解锁写权限并从地址栏抹去口令；访客只读浏览，无任何登录框 */
 onMounted(async () => {
@@ -97,6 +148,19 @@ async function doUnlock() {
   </main>
 
   <ToastHost />
+
+  <!-- 快捷键帮助（? 呼出） -->
+  <Modal :show="helpShow" title="⌨️ 键盘快捷键" width="360px" @close="helpShow = false">
+    <div class="sc-list">
+      <div v-for="s in SHORTCUTS" :key="s.keys" class="sc-row">
+        <span class="sc-keys mono">{{ s.keys }}</span>
+        <span class="sc-label">{{ s.label }}</span>
+      </div>
+      <div class="sc-row"><span class="sc-keys mono">Ctrl K</span><span class="sc-label">命令面板</span></div>
+      <div class="sc-row"><span class="sc-keys mono">?</span><span class="sc-label">本帮助</span></div>
+      <div class="sc-row"><span class="sc-keys mono">← →</span><span class="sc-label">阅读器/Wrapped 翻页</span></div>
+    </div>
+  </Modal>
 
   <!-- 站主解锁卡：写操作被拒时出现在右下角 -->
   <Transition name="unlock">
@@ -182,8 +246,7 @@ async function doUnlock() {
 }
 
 /* 站主解锁卡 */
-.unlock-card {
-  position: fixed;
+.unlock-card {  position: fixed;
   right: 22px;
   bottom: 22px;
   z-index: 160;
@@ -248,5 +311,34 @@ async function doUnlock() {
 .unlock-leave-to {
   opacity: 0;
   transform: translateY(12px);
+}
+
+/* 快捷键帮助 */
+.sc-list {
+  display: grid;
+  gap: 6px;
+}
+.sc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 8px;
+}
+.sc-row:hover {
+  background: var(--accent-soft);
+}
+.sc-keys {
+  font-size: 0.7rem;
+  color: var(--t-accent);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 2px 8px;
+  min-width: 52px;
+  text-align: center;
+}
+.sc-label {
+  font-size: 0.84rem;
+  color: var(--text-2);
 }
 </style>

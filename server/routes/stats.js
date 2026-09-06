@@ -6,6 +6,7 @@
 import { Router } from 'express'
 import { collection } from '../db.js'
 import { requireOwner } from './auth.js'
+import { restoreAll } from '../db.js'
 
 const router = Router()
 
@@ -139,4 +140,87 @@ router.get('/reading', (req, res) => {
     charsMonth: monthLogs.reduce((n, l) => n + (l.chars || 0), 0),
     daysMonth: monthLogs.length,
   })
+})
+
+/* ---------- 数据中心：指定年度全维度聚合（支持年份对比） ---------- */
+router.get('/insights', (req, res) => {
+  const year = String(Number(req.query.year) || new Date().getFullYear())
+  const prevYear = String(Number(year) - 1)
+  const inYearOf = (ts, y) => dayOf(ts).startsWith(y)
+
+  const aggregate = (y) => {
+    const movies = collection('movies').find()
+    const done = movies.filter((m) => m.status === 'done')
+    const yearDone = done.filter((m) => inYearOf(m.watchedAt || m.updatedAt, y))
+    const months = Array.from({ length: 12 }, () => 0)
+    for (const m of yearDone) {
+      const mo = Number(dayOf(m.watchedAt || m.updatedAt).slice(5, 7))
+      if (mo >= 1 && mo <= 12) months[mo - 1]++
+    }
+    const rated = done.filter((m) => m.personalRating > 0)
+    const byType = {}
+    for (const m of yearDone) {
+      const label = { movie: '电影', tv: '剧集', anime: '动漫', doc: '纪录片' }[m.type] || '其他'
+      byType[label] = (byType[label] || 0) + 1
+    }
+    const todosAll = collection('todos').find()
+    return {
+      movies: yearDone.length,
+      episodes: yearDone.reduce((n, m) => n + (m.airedEps > 0 ? m.watchedEps || 0 : 0), 0),
+      months,
+      byType,
+      avgRating: (() => {
+        const r = done.filter((m) => m.personalRating > 0 && inYearOf(m.watchedAt || m.updatedAt, y))
+        return r.length ? Number((r.reduce((n, m) => n + m.personalRating, 0) / r.length).toFixed(1)) : 0
+      })(),
+      topRated: done
+        .filter((m) => m.personalRating > 0 && inYearOf(m.watchedAt || m.updatedAt, y))
+        .sort((a, b) => b.personalRating - a.personalRating)
+        .slice(0, 5)
+        .map((m) => ({ title: m.title, rating: m.personalRating, cover: m.cover })),
+      todosDone: todosAll.filter((t) => t.done && inYearOf(t.updatedAt || t.createdAt, y)).length,
+    }
+  }
+
+  const games = collection('games').find()
+  const books = collection('books').find()
+  res.json({
+    year,
+    prevYear,
+    cur: aggregate(year),
+    prev: aggregate(prevYear),
+    games: {
+      total: games.length,
+      hours: Math.round(games.reduce((n, g) => n + (g.playtime || 0), 0) / 60),
+      top: [...games].filter((g) => (g.playtime || 0) > 0).sort((a, b) => b.playtime - a.playtime).slice(0, 5).map((g) => ({ name: g.name, hours: Math.round((g.playtime || 0) / 60) })),
+    },
+    reading: (() => {
+      const log = collection('readingLog').find({}, { sort: { date: 1 } })
+      const daySet = new Set(log.map((l) => l.date))
+      let streak = 0
+      const cursor = new Date()
+      if (!daySet.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1)
+      while (daySet.has(cursor.toISOString().slice(0, 10))) { streak++; cursor.setDate(cursor.getDate() - 1) }
+      return { streak, days: daySet.size, chars: log.reduce((n, l) => n + (l.chars || 0), 0), books: books.length }
+    })(),
+  })
+})
+
+/* ---------- 数据导入（站主专属）：接受 /export 格式的 JSON 恢复全站数据 ---------- */
+router.post('/import', requireOwner, (req, res) => {
+  const d = req.body
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return res.status(400).json({ error: '格式不对：应为一份数据导出 JSON' })
+  const allowed = ['movies', 'todos', 'links', 'games', 'events', 'githubRepos', 'books']
+  const dump = {}
+  let n = 0
+  for (const key of allowed) {
+    if (d[key] === undefined) continue
+    if (!Array.isArray(d[key])) return res.status(400).json({ error: `${key} 应为数组` })
+    dump[key] = d[key]
+    n += d[key].length
+  }
+  if (!n) return res.status(400).json({ error: '备份里没有可导入的集合' })
+  const restored = restoreAll(dump)
+  console.log(`[import] 数据恢复完成：${restored} 条（${Object.keys(dump).join(', ')}）`)
+  res.json({ ok: true, restored })
 })

@@ -184,6 +184,21 @@ export function collection(name, seed = []) {
   return state.collections[name]
 }
 
+/** 全量恢复（数据导入）：以备份 dump 重建集合，保留原始 id（事件/日程的 refId 引用不断链） */
+export function restoreAll(dump) {
+  let restored = 0
+  for (const [name, rows] of Object.entries(dump)) {
+    if (!Array.isArray(rows)) continue
+    state.raw[name] = rows
+    const col = state.collections[name] || collection(name)
+    col.rows = rows
+    col._nextId = rows.reduce((m, r) => Math.max(m, Number(r.id) || 0), 0)
+    restored += rows.length
+  }
+  scheduleSave()
+  return restored
+}
+
 /* 退出兜底落盘 */
 process.on('exit', flushSync)
 process.on('SIGINT', () => {

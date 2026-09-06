@@ -15,6 +15,7 @@ export const modules = [
   { path: '/movies', name: 'movies', label: '影视', icon: '🎬', view: () => import('@/components/movies/MoviesView.vue'), desc: '待看录 · 已看完' },
   { path: '/games', name: 'games', label: '游戏', icon: '🎮', view: () => import('@/components/games/GamesView.vue'), desc: '成就仓 · 荣誉墙' },
   { path: '/calendar', name: 'calendar', label: '日历', icon: '📅', view: () => import('@/components/calendar/CalendarView.vue'), desc: '日程 · 待办' },
+  { path: '/insights', name: 'insights', label: '数据中心', icon: '📊', view: () => import('@/components/insights/InsightsView.vue'), desc: '年度全维度统计' },
   { path: '/github', name: 'github', label: 'GitHub', icon: '🐙', view: () => import('@/components/github/GithubView.vue'), desc: '追更仓 · 雷达' },
   { path: '/reader', name: 'reader', label: '阅读', icon: '📖', view: () => import('@/components/reader/ReaderView.vue'), desc: '小说 · 漫画' },
   { path: '/links', name: 'links', label: '导航', icon: '🔗', view: () => import('@/components/links/LinksView.vue'), desc: '书签 · 存活检测' },

@@ -133,12 +133,19 @@ export const api = {
     heatmap: () => http.get('/stats/heatmap'),
     wrapped: () => http.get('/stats/wrapped'),
     reading: () => http.get('/stats/reading'),
+    insights: (year) => http.get('/stats/insights', { params: year ? { year } : {} }),
   },
 
   /* 资讯订阅 */
   feeds: {
     list: (feed) => http.get('/feeds', { params: feed ? { feed } : {} }),
+    sources: () => http.get('/feeds/sources'),
+    addSource: (name, url) => http.post('/feeds/sources', { name, url }),
+    removeSource: (id) => http.delete(`/feeds/sources/${id}`),
   },
+
+  /* 数据导入（站主） */
+  importData: (dump) => http.post('/stats/import', dump, { timeout: 60000 }),
 
   /* 阅读 */
   reader: {

@@ -4,6 +4,8 @@
  */
 import { Router } from 'express'
 import { smartFetch } from '../utils.js'
+import { collection } from '../db.js'
+import { requireOwner } from './auth.js'
 
 const router = Router()
 
@@ -31,6 +33,7 @@ const tag = (xml, name) => {
 }
 
 const cache = new Map() // key → { at, items }
+const customFeeds = () => collection('customFeeds')
 
 function parseFeed(xml) {
   const items = []
@@ -57,13 +60,22 @@ function parseFeed(xml) {
 router.get('/', async (req, res) => {
   const key = String(req.query.feed || 'sspai')
   const feed = FEEDS[key]
-  if (!feed) return res.status(400).json({ error: '未知订阅源' })
+  /* 自定义源（id 数字）→ 查自定义订阅表 */
+  let name = feed?.name
+  let url = feed?.url
+  if (!feed && /^\d+$/.test(key)) {
+    const custom = customFeeds().findOne({ id: Number(key) })
+    if (!custom) return res.status(404).json({ error: '订阅源不存在' })
+    name = custom.name
+    url = custom.url
+  }
+  if (!url) return res.status(400).json({ error: '未知订阅源' })
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < 30 * 60 * 1000) {
-    return res.json({ feed: key, name: feed.name, items: hit.items })
+    return res.json({ feed: key, name: feed?.name || name, items: hit.items })
   }
   try {
-    const upstream = await smartFetch(feed.url, { timeout: 12000 })
+    const upstream = await smartFetch(url, { timeout: 12000 })
     if (!upstream.ok) throw new Error(`HTTP ${upstream.status}`)
     const xml = await upstream.text()
     const items = parseFeed(xml)
@@ -74,6 +86,30 @@ router.get('/', async (req, res) => {
     console.error(`[feeds] ${key} 拉取失败:`, err.message)
     res.status(502).json({ error: `订阅源拉取失败（${err.message}）` })
   }
+})
+
+
+/* ---------- 自定义订阅源管理（写操作需站主） ---------- */
+router.get('/sources', (req, res) => {
+  const presets = Object.entries(FEEDS).map(([key, f]) => ({ key, name: f.name, preset: true }))
+  const custom = customFeeds().find().map((f) => ({ key: String(f.id), name: f.name, url: f.url }))
+  res.json({ presets, custom })
+})
+
+router.post('/sources', requireOwner, (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 30)
+  const url = String(req.body.url || '').trim()
+  if (!name) return res.status(400).json({ error: '名称不能为空' })
+  if (!/^https?:\/\/.+\..+/.test(url)) return res.status(400).json({ error: 'URL 格式不正确' })
+  if (customFeeds().findOne({ url })) return res.status(409).json({ error: '该源已存在', debugRows: customFeeds().find() })
+  const row = customFeeds().insert({ name, url })
+  res.status(201).json(row)
+})
+
+router.delete('/sources/:id', requireOwner, (req, res) => {
+  const removed = customFeeds().remove({ id: Number(req.params.id) })
+  if (!removed) return res.status(404).json({ error: '源不存在' })
+  res.json({ removed })
 })
 
 export default router
