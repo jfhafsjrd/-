@@ -134,6 +134,13 @@ const monthMax = computed(() => Math.max(1, ...(data.value?.movies.months || [])
           <span class="w-chip">📚 库藏 {{ data.games.total }} 款</span>
           <span class="w-chip">🔥 在玩 {{ data.games.playing }} 款</span>
         </div>
+        <div v-if="data.games.top?.length" class="w-tops">
+          <div v-for="(g, i) in data.games.top" :key="g.name" class="w-top">
+            <span class="w-top-rank mono">#{{ i + 1 }}</span>
+            <span class="w-top-name">{{ g.name }}</span>
+            <span class="w-top-hrs mono">{{ g.hours }}h</span>
+          </div>
+        </div>
       </section>
 
       <!-- S5 阅读 -->
@@ -372,5 +379,40 @@ const monthMax = computed(() => Math.max(1, ...(data.value?.movies.months || [])
 @media (max-width: 560px) {
   .w-hero { font-size: 2.2rem; }
   .w-big { font-size: 3.4rem; }
+}
+.w-tops {
+  display: grid;
+  gap: 8px;
+  width: min(400px, 80vw);
+  margin-top: 6px;
+}
+.w-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+}
+.w-top-rank {
+  color: #fde047;
+  font-weight: 700;
+  font-size: 0.8rem;
+  width: 26px;
+  text-align: left;
+}
+.w-top-name {
+  flex: 1;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.w-top-hrs {
+  font-size: 0.74rem;
+  opacity: 0.85;
 }
 </style>

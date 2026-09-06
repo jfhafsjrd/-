@@ -76,6 +76,11 @@ router.get('/wrapped', (req, res) => {
   const games = collection('games').find()
   const gameHours = Math.round(games.reduce((n, g) => n + (g.playtime || 0), 0) / 60)
   const gamePlaying = games.filter((g) => g.status === 'playing').length
+  const topGames = [...games]
+    .filter((g) => (g.playtime || 0) > 0)
+    .sort((a, b) => b.playtime - a.playtime)
+    .slice(0, 3)
+    .map((g) => ({ name: g.name, hours: Math.round((g.playtime || 0) / 60) }))
 
   const todosAll = collection('todos').find()
   const todosDone = todosAll.filter((t) => t.done && inYear(t.updatedAt || t.createdAt)).length
@@ -87,7 +92,7 @@ router.get('/wrapped', (req, res) => {
   res.json({
     year,
     movies: { count: yearDone.length, episodes, months, peakMonth: peakMonth + 1, best: best ? { title: best.title, rating: best.personalRating, cover: best.cover } : null, byType },
-    games: { total: games.length, hours: gameHours, playing: gamePlaying },
+    games: { total: games.length, hours: gameHours, playing: gamePlaying, top: topGames },
     todos: { done: todosDone, open: todosAll.filter((t) => !t.done).length },
     reading: { books: books.length, chars: bookChars, avgPct: bookDonePct },
     want: movies.length - done.length,

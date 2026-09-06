@@ -430,7 +430,7 @@ async function removeEvent(ev) {
               <IconSvg v-if="t.done" name="check" :size="12" />
             </button>
             <div class="todo-main">
-              <span class="todo-title">{{ t.title }}</span>
+              <span class="todo-title">{{ t.title }}<i v-if="t.recurring && t.recurring !== 'none'" class="todo-rep" title="循环任务">🔁</i></span>
               <span class="todo-meta">
                 <i class="tag" :class="CATS[t.category]?.cls">{{ CATS[t.category]?.label || t.category }}</i>
                 <span v-if="t.dueDate" class="todo-due mono" :class="{ late: isOverdue(t) }">
@@ -814,7 +814,12 @@ async function removeEvent(ev) {
 .todo-item.done {
   opacity: 0.5;
 }
-.todo-item.done .todo-title {
+.todo-item.done .todo-rep {
+  font-size: 0.72rem;
+  margin-left: 5px;
+  font-style: normal;
+}
+.todo-title {
   text-decoration: line-through;
 }
 .todo-item.overdue {

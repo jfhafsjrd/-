@@ -310,6 +310,7 @@ async function toggleTodo(t) {
         <div class="rss-tabs">
           <button class="chip" :class="{ on: feed === 'sspai' }" @click="feed = 'sspai'; loadRss()">少数派</button>
           <button class="chip" :class="{ on: feed === 'ruanyifeng' }" @click="feed = 'ruanyifeng'; loadRss()">阮一峰</button>
+          <button class="chip" :class="{ on: feed === 'ithome' }" @click="feed = 'ithome'; loadRss()">IT之家</button>
         </div>
       </header>
       <div v-if="!rss.length" class="skeleton" style="height: 96px; border-radius: 10px"></div>

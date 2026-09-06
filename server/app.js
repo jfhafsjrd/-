@@ -19,6 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 await initProxy(process.env.HTTPS_PROXY || '')
 
 const app = express()
+app.set('trust proxy', 1) // nginx 反代：req.ip 取真实客户端 IP（登录限速按 IP 生效）
 app.use(compression()) // gzip：JS/CSS/JSON 传输体积约省 70%
 app.use(cookieParser())
 app.use(express.json({ limit: '8mb' }))

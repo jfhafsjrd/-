@@ -10,6 +10,7 @@ const router = Router()
 const FEEDS = {
   sspai: { name: '少数派', url: 'https://sspai.com/feed' },
   ruanyifeng: { name: '阮一峰周刊', url: 'https://www.ruanyifeng.com/blog/atom.xml' },
+  ithome: { name: 'IT之家', url: 'https://www.ithome.com/rss/' },
 }
 
 const entDecode = (s) =>

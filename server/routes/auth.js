@@ -48,10 +48,31 @@ router.get('/status', (req, res) => {
 })
 
 /* ---------- 站主解锁：访问码换长效令牌（专属链接 /?auth=访问码 自动调用） ---------- */
+/* 防爆破：口令空间有限，失败 5 次锁 IP 15 分钟（成功即清零） */
+const attempts = new Map() // ip → { count, until }
+
 router.post('/login', (req, res) => {
   if (!CODE() && !(OAUTH_ID() && OAUTH_SECRET())) return res.status(400).json({ error: '本站未启用写保护' })
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown'
+  const rec = attempts.get(ip)
+  if (rec && rec.until > Date.now()) {
+    return res.status(429).json({ error: `尝试次数过多，请 ${Math.ceil((rec.until - Date.now()) / 1000)} 秒后再试` })
+  }
   const secret = OAUTH_SECRET() ? String(req.body.code || '') === OAUTH_SECRET() : String(req.body.code || '') === CODE()
-  if (!secret) return res.status(403).json({ error: '口令不正确' })
+  if (!secret) {
+    const cur = attempts.get(ip) || { count: 0, until: 0 }
+    cur.count++
+    if (cur.count >= 5) {
+      cur.count = 0
+      cur.until = Date.now() + 15 * 60_000
+    }
+    attempts.set(ip, cur)
+    if (attempts.size > 500) {
+      for (const [k, v] of attempts) if (v.until < Date.now()) attempts.delete(k)
+    }
+    return res.status(403).json({ error: `口令不正确（剩余 ${5 - cur.count} 次尝试）` })
+  }
+  attempts.delete(ip)
   res.cookie('auth_token', deriveToken(), { httpOnly: true, sameSite: 'lax', maxAge: 3650 * 86400_000, path: '/' })
   res.json({ token: deriveToken() })
 })
