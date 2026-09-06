@@ -51,6 +51,7 @@ export const api = {
     stats: () => http.get('/movies/stats'),
     search: (q) => http.get('/movies/search', { params: { q } }),
     trending: (page) => http.get('/movies/trending', { params: page ? { page } : {}, timeout: 20000 }),
+    similar: (tmdbId, type) => http.get('/movies/similar', { params: { tmdbId, type } }),
     add: (data) => http.post('/movies', data),
     update: (id, data) => http.put(`/movies/${id}`, data),
     setProgress: (id, mark) => http.put(`/movies/${id}/progress`, { mark }, { timeout: 60000 }),

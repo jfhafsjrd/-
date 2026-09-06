@@ -108,6 +108,29 @@ router.get('/trending', async (req, res) => {
   }
 })
 
+/* ---------- 相似推荐："如果你喜欢 X"（TMDB recommendations） ---------- */
+router.get('/similar', async (req, res) => {
+  const tmdbId = Number(req.query.tmdbId)
+  const type = req.query.type === 'tv' ? 'tv' : 'movie'
+  if (!tmdbId || !TMDB_KEY) return res.status(400).json({ error: '参数缺失' })
+  try {
+    const j = await fetchJSON(
+      `${TMDB}/${type}/${tmdbId}/recommendations?api_key=${TMDB_KEY}&language=zh-CN&page=1`,
+      { timeout: 10000 },
+    )
+    const owned = new Set(movies().find().map((m) => m.tmdbId))
+    const list = (j.results || [])
+      .filter((r) => r.poster_path && (r.title || r.name))
+      .filter((r) => !owned.has(r.id))
+      .slice(0, 8)
+      .map(mapTmdb)
+    res.json(list)
+  } catch (err) {
+    console.warn('[movies] 相似推荐失败:', err.message)
+    res.json([])
+  }
+})
+
 /* ---------- 年度观看统计 ---------- */
 router.get('/stats', (req, res) => {
   const all = movies().find()

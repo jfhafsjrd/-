@@ -77,6 +77,13 @@ async function removeFeed(tab) {
   }
 }
 
+/* RSS 已读标记（localStorage），点击即灰化 */
+const rssRead = ref(new Set(JSON.parse(localStorage.getItem('lifeos_rss_read') || '[]')))
+function markRssRead(link) {
+  rssRead.value.add(link)
+  localStorage.setItem('lifeos_rss_read', JSON.stringify([...rssRead.value]))
+}
+
 function isRecent(date) {
   return date && (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000 <= 3
 }
@@ -369,7 +376,7 @@ async function toggleTodo(t) {
       <div v-if="!rss.length" class="skeleton" style="height: 96px; border-radius: 10px"></div>
       <ul v-else class="rss-list">
         <li v-for="it in rss" :key="it.link">
-          <a :href="it.link" target="_blank" rel="noopener" class="rss-item">
+          <a :href="it.link" target="_blank" rel="noopener" class="rss-item" :class="{ read: rssRead.has(it.link) }" @click="markRssRead(it.link)">
             <span class="rss-title">{{ it.title }}<i v-if="isRecent(it.date)" class="rss-new">NEW</i></span>
             <span class="mono rss-date">{{ it.date }}</span>
           </a>
@@ -820,6 +827,12 @@ async function toggleTodo(t) {
   padding: 8px 12px;
   border-radius: 9px;
   transition: background var(--dur-fast);
+}
+.rss-item.read .rss-title {
+  opacity: 0.42;
+}
+.rss-item.read {
+  background: none;
 }
 .rss-item:hover {
   background: var(--accent-soft);

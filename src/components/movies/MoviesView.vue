@@ -63,6 +63,17 @@ async function loadLibrary() {
   }
 }
 
+/* ---------- 趋势分类筛选 ---------- */
+const trendFilter = ref('all')
+const TREND_FILTERS = [
+  { key: 'all', label: '全部' },
+  { key: 'movie', label: '电影' },
+  { key: 'tv', label: '剧集' },
+]
+const trendingFiltered = computed(() =>
+  trendFilter.value === 'all' ? trending.value : trending.value.filter((t) => t.mediaType === trendFilter.value),
+)
+
 /* ---------- 年度观看统计 ---------- */
 const stats = ref(null)
 /* 海报加载失败的条目 → 回退占位（上游 404/网络抖动不再裂图） */
@@ -121,6 +132,20 @@ async function loadMoreTrending() {
   } finally {
     trendingLoadingMore.value = false
   }
+}
+
+/* 🎲 随便看一部：从待看池随机点亮一部 */
+const spotlightId = ref(0)
+function rollOne() {
+  if (!wantList.value.length) return
+  const pick = wantList.value[Math.floor(Math.random() * wantList.value.length)]
+  spotlightId.value = pick.id
+  confetti({ count: 18 })
+  toast.info(`🎲 就看《${pick.title}》！`)
+  setTimeout(() => {
+    document.querySelector('.mv-card.spot')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, 60)
+  setTimeout(() => (spotlightId.value = 0), 5000)
 }
 
 /* 无限滚动哨兵：滚动接近趋势区底部 → 追加下一批 */
@@ -763,7 +788,12 @@ async function doTraktSync() {
       <div v-if="trendingError" class="tmdb-err" style="margin-bottom: 18px">
         ⚠️ 趋势获取失败（{{ trendingError }}），海报墙暂不可用，下方本地库正常
       </div>
-      <PosterWall v-else :items="trending" @pick="openDetail" />
+      <template v-else>
+        <div class="trend-filter">
+          <button v-for="t in TREND_FILTERS" :key="t.key" class="chip" :class="{ on: trendFilter === t.key }" @click="trendFilter = t.key">{{ t.label }}</button>
+        </div>
+        <PosterWall :items="trendingFiltered" @pick="openDetail" />
+      </template>
       <div ref="trendSentinel" class="trend-sentinel mono">
         {{ trendingLoadingMore ? '正在加载更多…' : trendingExhausted ? '— 已经到底啦 —' : '' }}
       </div>
@@ -773,6 +803,7 @@ async function doTraktSync() {
         :rows="3" @retry="loadLibrary">
         <div class="pool">
           <div class="pool-head">
+            <button v-if="tab === 'want' && wantList.length" class="btn roll-btn" @click="rollOne">🎲 随便看一部</button>
             <div class="pill-tabs" role="tablist">
               <span class="pill-slider"></span>
               <button class="pill-tab" :class="{ active: tab === 'want' }" role="tab" @click="tab = 'want'">
@@ -957,6 +988,30 @@ async function doTraktSync() {
 
 .mv-root {
   position: relative;
+}
+.trend-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.trend-filter .chip {
+  font-size: 0.72rem;
+  padding: 4px 12px;
+}
+.roll-btn {
+  border: 1px dashed var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--t-accent);
+  font-size: 0.78rem;
+  padding: 8px 14px;
+}
+.mv-card.spot {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 18px 50px -12px rgba(168, 85, 247, 0.6);
+  animation: spot-pulse 1.2s ease-in-out 3;
+}
+@keyframes spot-pulse {
+  50% { transform: translateY(-6px); }
 }
 .trend-sentinel {
   height: 26px;

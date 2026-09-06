@@ -1,9 +1,9 @@
 <script setup>
-/** TMDB 详情弹窗 — 海报 + 简介 + 一键加入待看 */
-import { ref, watch } from 'vue'
+/** TMDB 详情弹窗 — 海报 + 简介 + 一键入库 + "如果你喜欢"相似推荐 */
+import { computed, ref, watch } from 'vue'
 import Modal from '@/components/common/Modal.vue'
 import IconSvg from '@/components/common/IconSvg.vue'
-import { tmdbPoster } from '@/api'
+import { api, tmdbPoster } from '@/api'
 import { useToast } from '@/composables/useToast'
 
 const props = defineProps({
@@ -14,11 +14,49 @@ const props = defineProps({
 const emit = defineEmits(['close', 'add'])
 const toast = useToast()
 const previewFailed = ref(false)
+const similar = ref([])
+const simLoading = ref(false)
+const activeTmdbId = ref(0) // 当前弹窗展示的条目（可被推荐切换）
+
+const display = computed(() => {
+  /* 相似推荐切换后：activeTmdbId 指向新条目 */
+  if (activeTmdbId.value && similar.value.length) {
+    return similar.value.find((s) => s.tmdbId === activeTmdbId.value) || props.item
+  }
+  return props.item
+})
 
 watch(
   () => props.item?.tmdbId,
-  () => (previewFailed.value = false),
+  async (id) => {
+    previewFailed.value = false
+    activeTmdbId.value = 0
+    similar.value = []
+    if (id && props.show) await loadSimilar(id)
+  },
 )
+watch(
+  () => props.show,
+  async (v) => {
+    if (v && props.item?.tmdbId && !similar.value.length) await loadSimilar(props.item.tmdbId)
+  },
+)
+
+async function loadSimilar(id) {
+  simLoading.value = true
+  try {
+    similar.value = await api.movies.similar(id, props.item?.mediaType === 'tv' || props.item?.typeLabel === '剧集' ? 'tv' : 'movie')
+  } catch {
+    similar.value = []
+  } finally {
+    simLoading.value = false
+  }
+}
+
+function pickSimilar(s) {
+  activeTmdbId.value = s.tmdbId
+  previewFailed.value = false
+}
 
 function onImgError() {
   previewFailed.value = true
@@ -27,31 +65,46 @@ function onImgError() {
 </script>
 
 <template>
-  <Modal :show="show && !!item" :title="item?.title || '详情'" width="640px" @close="emit('close')">
-    <div v-if="item" class="detail">
+  <Modal :show="show && !!display" :title="display?.title || '详情'" width="640px" @close="emit('close')">
+    <div v-if="display" class="detail">
       <div v-if="item.backdrop && !previewFailed" class="backdrop">
-        <img :src="tmdbPoster(item.backdrop, 'w780')" :alt="item.title" loading="lazy" @error="previewFailed = true" />
+        <img :src="tmdbPoster(display.backdrop, 'w780')" :alt="display.title" loading="lazy" @error="previewFailed = true" />
         <span class="backdrop-grad"></span>
       </div>
       <div class="detail-row">
         <div class="poster">
           <div v-if="previewFailed" class="poster-fallback">🎞️</div>
-          <img v-else :src="tmdbPoster(item.poster, 'w500')" :alt="item.title" @error="onImgError" />
+          <img v-else :src="tmdbPoster(display.poster, 'w500')" :alt="display.title" @error="onImgError" />
         </div>
         <div class="info">
           <div class="badges">
-            <span class="tag">{{ item.typeLabel }}</span>
-            <span class="tag plain mono" v-if="item.year">{{ item.year }}</span>
-            <span class="tag info mono" v-if="item.tmdbRating">★ {{ item.tmdbRating.toFixed(1) }}</span>
+            <span class="tag">{{ display.typeLabel }}</span>
+            <span class="tag plain mono" v-if="display.year">{{ display.year }}</span>
+            <span class="tag info mono" v-if="display.tmdbRating">★ {{ display.tmdbRating.toFixed(1) }}</span>
           </div>
-          <p class="overview">{{ item.overview || '暂无简介' }}</p>
+          <p class="overview">{{ display.overview || '暂无简介' }}</p>
+        </div>
+      </div>
+
+      <!-- 相似推荐：如果你喜欢 -->
+      <div v-if="similar.length && activeTmdbId" class="similar">
+        <header class="sim-head">
+          <span class="sim-title">如果你喜欢《{{ item.title }}》</span>
+          <button class="sim-back" @click="activeTmdbId = 0">← 返回</button>
+        </header>
+        <div class="sim-grid">
+          <button v-for="s in similar" :key="s.tmdbId" class="sim-card" :class="{ on: s.tmdbId === activeTmdbId }" @click="pickSimilar(s)">
+            <img :src="tmdbPoster(s.poster, 'w185')" :alt="s.title" loading="lazy" />
+            <span class="sim-name">{{ s.title }}</span>
+            <span class="sim-rate mono">★ {{ s.tmdbRating.toFixed(1) }}</span>
+          </button>
         </div>
       </div>
     </div>
     <template #footer>
       <button class="btn" @click="emit('close')">关闭</button>
-      <button class="btn success-btn" :disabled="adding" @click="emit('add', item, 'done')">✓ 已看完</button>
-      <button class="btn primary" :disabled="adding" @click="emit('add', item, 'want')">
+      <button class="btn success-btn" :disabled="adding" @click="emit('add', display, 'done')">✓ 已看完</button>
+      <button class="btn primary" :disabled="adding" @click="emit('add', display, 'want')">
         <IconSvg v-if="!adding" name="plus" :size="15" />
         <span v-else>加入中…</span>
         {{ adding ? '' : '加入我的待看' }}
@@ -144,6 +197,74 @@ function onImgError() {
   }
   .poster {
     max-width: 200px;
+  }
+}
+
+.similar {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.sim-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.sim-title {
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+.sim-back {
+  border: none;
+  background: none;
+  color: var(--t-accent);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+.sim-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.sim-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: none;
+  padding: 6px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  transition: border-color var(--dur-fast), transform var(--dur-fast);
+}
+.sim-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+.sim-card.on {
+  border-color: var(--accent);
+  box-shadow: var(--glow-soft);
+}
+.sim-card img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 7px;
+}
+.sim-name {
+  font-size: 0.68rem;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sim-rate {
+  font-size: 0.62rem;
+  color: var(--text-3);
+}
+@media (max-width: 560px) {
+  .sim-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 </style>

@@ -226,6 +226,7 @@ const todayFocus = computed(() => {
   const evs = (eventsByDate.value[today] || []).slice().sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))
   const todoItems = todos.value
     .filter((t) => !t.done && t.dueDate && t.dueDate.slice(0, 10) === today)
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0))
     .map((t) => ({ id: `ft-${t.id}`, title: t.title, time: (t.dueDate || '').slice(11, 16), source: 'todo' }))
   return { items: [...todoItems, ...evs].slice(0, 8), now: nowHM.value }
 })
