@@ -131,6 +131,7 @@ const sorted = computed(() => {
     <div v-if="readingStats && (readingStats.daysTotal > 0 || inProgress)" class="shelf-meta glass-card">
       <span class="sm-chip">{{ readingStats.streak > 0 ? `🔥 连续阅读 ${readingStats.streak} 天` : '📖 读一点，点亮连续天数' }}</span>
       <span class="sm-chip" v-if="readingStats.charsMonth > 0">📐 本月 {{ (readingStats.charsMonth / 10000).toFixed(1) }} 万字</span>
+      <span class="sm-chip" v-if="readingStats.charsMonth > 0">⏱ ≈ {{ Math.round(readingStats.charsMonth / 450) }} 分钟</span>
       <span class="sm-chip" v-if="readingStats.daysMonth > 0">📅 本月阅读 {{ readingStats.daysMonth }} 天</span>
     </div>
 

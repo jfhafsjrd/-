@@ -325,6 +325,8 @@ async function toggleTodo(t) {
           <span class="qi-icon">{{ m.icon }}</span>
           <span class="qi-label">{{ m.label }}</span>
           <span class="qi-desc">{{ m.desc }}</span>
+          <span v-if="m.name === 'movies' && movies.length" class="qi-count mono">{{ movies.length }}</span>
+          <span v-if="m.name === 'games' && gameStats" class="qi-count mono">{{ gameStats.total }}</span>
         </RouterLink>
       </div>
     </section>
@@ -787,6 +789,7 @@ async function toggleTodo(t) {
   gap: 12px;
 }
 .quick-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -814,5 +817,19 @@ async function toggleTodo(t) {
 .qi-desc {
   font-size: 0.7rem;
   color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qi-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.68rem;
+  color: var(--t-accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 1px 8px;
 }
 </style>
