@@ -1,0 +1,13 @@
+{
+  "name": "Life OS · 探索者仪表盘",
+  "short_name": "Life OS",
+  "description": "个人数字生活操作系统 — 影视、游戏、阅读、日历、导航",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0b10",
+  "theme_color": "#0a0b10",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

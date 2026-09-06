@@ -20,10 +20,12 @@ const inputEl = ref(null)
 const moviesCache = ref(null)
 const linksCache = ref(null)
 const todosCache = ref(null)
+const gamesCache = ref(null)
 onMounted(() => {
   api.movies.list().then((l) => (moviesCache.value = l)).catch(() => {})
   api.links.list().then((l) => (linksCache.value = Array.isArray(l) ? l : [])).catch(() => {})
   api.todos.list().then((l) => (todosCache.value = l)).catch(() => {})
+  api.games.list().then((l) => (gamesCache.value = l)).catch(() => {})
 })
 
 const open = computed(() => props.modelValue)
@@ -65,6 +67,10 @@ const commands = computed(() => {
       },
     },
   )
+  /* 游戏：跳转游戏仓 */
+  for (const g of (gamesCache.value || []).filter((x) => x.playtime2weeks > 0)) {
+    list.push({ group: '游戏', icon: '🎮', label: g.name, desc: `近两周 ${Math.round(g.playtime2weeks / 60)} 小时`, run: () => router.push('/games') })
+  }
   /* 待办：跳转日历处理 */
   for (const t of todosCache.value || []) {
     if (t.done) continue

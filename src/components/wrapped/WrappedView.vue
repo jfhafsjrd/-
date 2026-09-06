@@ -113,7 +113,7 @@ const monthMax = computed(() => Math.max(1, ...(data.value?.movies.months || [])
       <section v-else-if="slide === 3" class="w-slide">
         <span class="w-eyebrow">🎮 游戏篇</span>
         <h1 class="w-big mono">{{ data.games.hours }}</h1>
-        <p class="w-label">小时的游戏时光</p>
+        <p class="w-label">小时 · Steam 游戏总时光</p>
         <div class="w-chips">
           <span class="w-chip">📚 库藏 {{ data.games.total }} 款</span>
           <span class="w-chip">🔥 在玩 {{ data.games.playing }} 款</span>

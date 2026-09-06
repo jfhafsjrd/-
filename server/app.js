@@ -46,6 +46,7 @@ const modules = {
   github: (await import('./routes/github.js')).default,
   reader: (await import('./routes/reader.js')).default,
   stats: (await import('./routes/stats.js')).default,
+  feeds: (await import('./routes/feeds.js')).default,
 }
 for (const [name, router] of Object.entries(modules)) {
   app.use(`/api/${name}`, router)

@@ -135,6 +135,11 @@ export const api = {
     reading: () => http.get('/stats/reading'),
   },
 
+  /* 资讯订阅 */
+  feeds: {
+    list: (feed) => http.get('/feeds', { params: feed ? { feed } : {} }),
+  },
+
   /* 阅读 */
   reader: {
     list: () => http.get('/reader'),

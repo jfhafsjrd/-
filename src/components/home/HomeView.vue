@@ -21,7 +21,18 @@ const movies = ref([])
 const todos = ref([])
 const todayEvents = ref([])
 const traktEps = ref([])
+const rss = ref([])
+const feed = ref('sspai')
 const today = ymd()
+
+async function loadRss() {
+  try {
+    const r = await api.feeds.list(feed.value)
+    rss.value = (r.items || []).slice(0, 6)
+  } catch {
+    rss.value = []
+  }
+}
 
 /* ---------- 每日一句（本地语料按日期轮换）+ 今日进度 ---------- */
 const QUOTES = [
@@ -82,6 +93,7 @@ async function loadAll() {
 onMounted(() => {
   loadWeather()
   loadAll()
+  loadRss()
 })
 
 /* ---------- 派生 ---------- */
@@ -282,6 +294,25 @@ async function toggleTodo(t) {
         <p class="panel-note">来自 Trakt · 追的剧 7 天内的更新</p>
       </section>
     </div>
+
+    <!-- ============ 资讯流 ============ -->
+    <section v-if="rss.length" class="panel glass-card">
+      <header class="panel-head">
+        <h2>📰 科技资讯</h2>
+        <div class="rss-tabs">
+          <button class="chip" :class="{ on: feed === 'sspai' }" @click="feed = 'sspai'; loadRss()">少数派</button>
+          <button class="chip" :class="{ on: feed === 'ruanyifeng' }" @click="feed = 'ruanyifeng'; loadRss()">阮一峰</button>
+        </div>
+      </header>
+      <ul class="rss-list">
+        <li v-for="it in rss" :key="it.link">
+          <a :href="it.link" target="_blank" rel="noopener" class="rss-item">
+            <span class="rss-title">{{ it.title }}</span>
+            <span class="mono rss-date">{{ it.date }}</span>
+          </a>
+        </li>
+      </ul>
+    </section>
 
     <!-- ============ 快捷导航 ============ -->
     <section class="quick glass-card">
@@ -689,6 +720,43 @@ async function toggleTodo(t) {
   font-size: 0.72rem;
   color: var(--text-3);
   text-align: center;
+}
+.rss-tabs {
+  display: flex;
+  gap: 4px;
+}
+.rss-tabs .chip {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+}
+.rss-list {
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.rss-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  transition: background var(--dur-fast);
+}
+.rss-item:hover {
+  background: var(--accent-soft);
+}
+.rss-title {
+  flex: 1;
+  font-size: 0.86rem;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rss-date {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  flex-shrink: 0;
 }
 .ev-date {
   font-size: 0.74rem;
