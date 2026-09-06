@@ -26,6 +26,10 @@ const rssLoading = ref(true)
 const feed = ref('sspai')
 const today = ymd()
 
+function isRecent(date) {
+  return date && (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000 <= 3
+}
+
 async function loadRss() {
   rssLoading.value = true
   try {
@@ -312,7 +316,7 @@ async function toggleTodo(t) {
       <ul v-else class="rss-list">
         <li v-for="it in rss" :key="it.link">
           <a :href="it.link" target="_blank" rel="noopener" class="rss-item">
-            <span class="rss-title">{{ it.title }}</span>
+            <span class="rss-title">{{ it.title }}<i v-if="isRecent(it.date)" class="rss-new">NEW</i></span>
             <span class="mono rss-date">{{ it.date }}</span>
           </a>
         </li>
@@ -759,6 +763,17 @@ async function toggleTodo(t) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.rss-new {
+  font-style: normal;
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: #0a0b10;
+  background: #fde047;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 8px;
+  vertical-align: 2px;
 }
 .rss-date {
   font-size: 0.68rem;
