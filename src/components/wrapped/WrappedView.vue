@@ -121,6 +121,13 @@ const monthMax = computed(() => Math.max(1, ...(data.value?.movies.months || [])
           <img v-if="data.movies.best.cover" class="w-poster" :src="data.movies.best.cover.startsWith('http') ? data.movies.best.cover : tmdbPoster(data.movies.best.cover, 'w500')" :alt="data.movies.best.title" />
           <h1 class="w-big" style="font-size: 2rem">{{ data.movies.best.title }}</h1>
           <p class="w-label">你的年度最高分 · <b class="mono">{{ data.movies.best.rating }}</b> 分</p>
+          <div v-if="(data.movies.topRated || []).length > 1" class="w-tops">
+            <div v-for="(m, i) in data.movies.topRated" :key="m.title" class="w-top">
+              <span class="w-top-rank mono">#{{ i + 1 }}</span>
+              <span class="w-top-name">{{ m.title }}</span>
+              <span class="w-top-hrs mono">{{ m.rating }} 分</span>
+            </div>
+          </div>
         </template>
         <p v-else class="w-note">今年还没打过分，明年补上？</p>
       </section>
