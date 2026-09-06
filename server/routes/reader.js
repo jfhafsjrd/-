@@ -370,9 +370,11 @@ router.put('/:id/progress', (req, res) => {
   const book = getBook(req.params.id)
   if (!book) return res.status(404).json({ error: '书籍不存在' })
   const { progress = {}, pct = 0 } = req.body
+  /* 先取旧值再更新：db.updateOne 原地突变，后取会被新值覆盖（别名 bug） */
+  const oldPct = book.pct || 0
   books().updateOne(book.id, { progress: { ...book.progress, ...progress }, pct, lastReadAt: new Date().toISOString() })
 
-  const delta = Math.round(((pct - (book.pct || 0)) / 100) * (book.chars || 0))
+  const delta = Math.round(((pct - oldPct) / 100) * (book.chars || 0))
   if (delta > 50) {
     const date = new Date().toISOString().slice(0, 10)
     const prev = collection('readingLog').findOne({ date })
