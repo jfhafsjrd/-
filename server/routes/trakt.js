@@ -342,8 +342,10 @@ router.get('/calendar', async (req, res) => {
       const n = e.episode?.number ?? 0
       return {
         id: `trakt-${e.show?.ids?.tmdb || e.show?.ids?.trakt}-${s}-${n}-${start}`,
+        showTmdbId: e.show?.ids?.tmdb || 0,
         date: when ? ymdLocal(when) : start,
         time: when ? `${pad2(when.getHours())}:${pad2(when.getMinutes())}` : '',
+        label: `S${s}E${n}`,
         title: `${e.show?.title || '未知剧集'} S${s}E${n}`,
         source: 'trakt',
         note: e.episode?.title || '',

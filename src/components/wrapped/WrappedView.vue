@@ -24,15 +24,31 @@ async function load() {
 onMounted(async () => {
   document.body.style.overflow = 'hidden'
   window.addEventListener('keydown', onKey)
+  restartAuto()
   await load()
 })
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
   window.removeEventListener('keydown', onKey)
+  clearInterval(autoTimer)
 })
 
-function next() { if (slide.value < total - 1) slide.value++ }
-function prev() { if (slide.value > 0) slide.value-- }
+/* 自动播放：8 秒一幕（Story 惯例），手动导航即重置计时 */
+const AUTO_MS = 8000
+let autoTimer = 0
+function restartAuto() {
+  clearInterval(autoTimer)
+  autoTimer = setInterval(() => {
+    if (slide.value < total - 1) go(slide.value + 1)
+    else clearInterval(autoTimer)
+  }, AUTO_MS)
+}
+function go(i) {
+  slide.value = Math.max(0, Math.min(i, total - 1))
+  restartAuto()
+}
+function next() { go(slide.value + 1) }
+function prev() { go(slide.value - 1) }
 function onKey(e) {
   if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next() }
   else if (e.key === 'ArrowLeft') prev()
@@ -63,7 +79,7 @@ const monthMax = computed(() => Math.max(1, ...(data.value?.movies.months || [])
   <div class="wrapped" :style="{ background: SCENES[slide] }" @click="next" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
     <!-- 顶部进度条 -->
     <div class="w-progress">
-      <div v-for="i in total" :key="i" class="wp-seg">
+      <div v-for="i in total" :key="i" class="wp-seg" @click.stop="go(i - 1)">
         <i v-if="i <= slide + 1"></i>
       </div>
       <button class="w-close" aria-label="关闭" @click.stop="router.push('/')">✕</button>

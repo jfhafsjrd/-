@@ -67,6 +67,8 @@ async function loadLibrary() {
 const stats = ref(null)
 /* 海报加载失败的条目 → 回退占位（上游 404/网络抖动不再裂图） */
 const coverFail = ref(new Set())
+/* Trakt 未来 7 天更新表：tmdbId → 展示文案 */
+const airingMap = ref({})
 const statMax = computed(() => Math.max(1, ...(stats.value?.months || [])))
 async function loadStats() {
   try {
@@ -129,6 +131,13 @@ onMounted(() => {
   loadTrending()
   loadStats()
   api.trakt.status().then((s) => (traktConfigured.value = s.configured)).catch(() => {})
+  api.trakt.calendar(ymd(), 7).then((r) => {
+    const map = {}
+    for (const ep of r.episodes || []) {
+      if (ep.showTmdbId) map[ep.showTmdbId] = { label: ep.label, date: ep.date }
+    }
+    airingMap.value = map
+  }).catch(() => {})
   trendObserver = new IntersectionObserver(
     (entries) => {
       if (entries.some((e) => e.isIntersecting)) loadMoreTrending()
@@ -825,6 +834,9 @@ async function doTraktSync() {
                 <p v-if="m.reservationTime" class="mv-reserve">
                   📅 预约 {{ m.reservationTime.replace('T', ' ') }}
                 </p>
+                <p v-if="m.type === 'tv' && airingMap[m.tmdbId]" class="mv-air mono">
+                  📡 {{ airingMap[m.tmdbId].label }} · {{ airingMap[m.tmdbId].date.slice(5) }} 更新
+                </p>
                 <div class="mv-actions">
                   <template v-if="m.status === 'want'">
                     <button class="btn sm primary" @click="openWatched(m)">✓ 看完了</button>
@@ -1474,6 +1486,10 @@ kbd {
 .mv-reserve {
   font-size: 0.78rem;
   color: var(--info);
+}
+.mv-air {
+  font-size: 0.74rem;
+  color: #fbbf24;
 }
 .mv-actions {
   display: flex;
